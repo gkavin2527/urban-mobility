@@ -8,7 +8,7 @@
     "start": "next start --hostname 127.0.0.1 -p 3000",
     "lint": "eslint src",
     "typecheck": "tsc --noEmit",
-    "test": "node --test --test-isolation=none tests/traffic-core.test.mjs tests/traffic-queries.test.mjs tests/simulation-engine.test.mjs tests/simulation-metrics.test.mjs tests/simulation-persistence.test.mjs tests/traffic-insights.test.mjs tests/simulation-scenarios.test.mjs tests/sql-guard.test.mjs",
+    "test": "node --test tests/traffic-core.test.mjs tests/traffic-queries.test.mjs tests/simulation-engine.test.mjs tests/simulation-metrics.test.mjs tests/simulation-persistence.test.mjs tests/traffic-insights.test.mjs tests/simulation-scenarios.test.mjs tests/sql-guard.test.mjs",
     "db:setup": "node --env-file=.env scripts/db-setup.mjs",
     "data:import": "node --env-file=.env scripts/import-dataset.mjs",
     "data:download": "python scripts/download-dataset.py",
