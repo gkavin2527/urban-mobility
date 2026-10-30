@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ASQL | Final Presentation Script</title>
+  <style>
+    :root { color-scheme: light; --ink:#203249; --muted:#63768b; --blue:#1d5d9b; --pale:#edf5fc; --line:#dce6ef; --paper:#fff; --bg:#f4f7fa; --amber:#855d15; --amber-bg:#fff5dc; --green:#1f7657; }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:smooth; }
+    body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.58 system-ui,-apple-system,"Segoe UI",sans-serif; }
+    a { color:var(--blue); }
+    .wrap { max-width:1160px; margin:auto; padding:28px 24px 80px; }
+    .hero { background:linear-gradient(125deg,#12395e,#1f689e); color:#fff; padding:36px 40px; border-radius:18px; box-shadow:0 16px 36px #11355321; }
+    .eyebrow { margin:0 0 8px; text-transform:uppercase; letter-spacing:.13em; font-size:12px; font-weight:750; color:#b9dbf5; }
+    h1 { font-size:clamp(30px,4vw,48px); line-height:1.12; margin:0 0 10px; letter-spacing:-.035em; }
+    .hero p:last-child { max-width:760px; margin-bottom:0; color:#deedf9; }
+    .toolbar { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin:20px 0; }
+    button { font:inherit; cursor:pointer; }
+    .button { border:1px solid #9fc2df; border-radius:9px; background:#fff; color:#174b78; padding:9px 14px; font-size:14px; font-weight:650; }
+    .button:hover { background:#eaf4fc; }
+    .button.primary { background:#1b619c; color:#fff; border-color:#1b619c; }
+    .button.primary:hover { background:#124b7c; }
+    .note { background:var(--amber-bg); color:#5d4d2e; border:1px solid #ead3a0; border-radius:11px; padding:14px 17px; }
+    .note strong { color:#734b08; }
+    .proof { background:#fff; border:1px solid var(--line); border-radius:14px; padding:19px 22px; margin-top:18px; }
+    .proof h2 { margin:0 0 4px; font-size:19px; }
+    .proof p { margin:0 0 12px; color:var(--muted); font-size:14px; }
+    .proof-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px 18px; }
+    .proof label { display:flex; align-items:flex-start; gap:9px; font-size:14px; cursor:pointer; }
+    .proof input { margin-top:5px; accent-color:var(--green); }
+    .layout { display:grid; grid-template-columns:220px minmax(0,1fr); gap:24px; align-items:start; margin-top:24px; }
+    nav { position:sticky; top:16px; background:#fff; border:1px solid var(--line); border-radius:13px; padding:17px; }
+    nav b { display:block; font-size:12px; letter-spacing:.1em; color:#63788d; margin-bottom:8px; text-transform:uppercase; }
+    nav a { display:block; padding:5px 0; font-size:13px; text-decoration:none; }
+    nav a:hover { text-decoration:underline; }
+    main { min-width:0; }
+    .section-title { font-size:27px; margin:0 0 3px; letter-spacing:-.025em; }
+    .section-intro { color:var(--muted); margin:0 0 18px; }
+    .script-section { background:var(--paper); border:1px solid var(--line); border-radius:13px; padding:23px 25px; margin:0 0 13px; }
+    .section-top { display:flex; justify-content:space-between; align-items:baseline; gap:15px; margin-bottom:10px; }
+    .section-top h3 { margin:0; font-size:19px; }
+    .time { white-space:nowrap; color:#68839c; font-size:12px; font-weight:700; }
+    .cue { margin:0 0 12px; color:#4d7192; font-size:13px; font-weight:650; }
+    .cue::before { content:"SHOW  "; letter-spacing:.08em; font-size:11px; color:#276d9e; }
+    .speech { margin:0 0 11px; font-size:16px; }
+    .speech:last-child { margin-bottom:0; }
+    .evidence { border-left:3px solid #dfb764; padding:9px 12px; background:#fffaf0; margin:12px 0 0; font-size:13px; color:#6b5a36; }
+    .when-verified { display:none; }
+    .explain { margin-top:48px; }
+    .explain-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:13px; }
+    .explainer { background:#fff; border:1px solid var(--line); border-radius:12px; padding:19px 20px; }
+    .explainer h3 { margin:0 0 7px; font-size:17px; }
+    .explainer p { margin:0 0 7px; font-size:14px; }
+    .explainer p:last-child { margin:0; }
+    .explainer .show { color:#416c8c; }
+    code { font: .9em ui-monospace,SFMono-Regular,Consolas,monospace; background:#eef3f7; border-radius:4px; padding:1px 4px; overflow-wrap:anywhere; }
+    .flow { background:#eaf3fa; border:1px solid #c5dbe9; border-radius:12px; padding:15px 18px; font-size:14px; font-weight:700; color:#275b80; margin:16px 0; }
+    .footer { margin-top:42px; padding-top:18px; border-top:1px solid var(--line); color:var(--muted); font-size:13px; }
+    .footer p { margin:4px 0; }
+    @media (max-width:850px) { .layout { grid-template-columns:1fr; } nav { position:static; display:flex; gap:4px 14px; flex-wrap:wrap; } nav b { width:100%; } nav a { padding:2px 0; } }
+    @media (max-width:600px) { .wrap { padding:12px 12px 44px; } .hero { padding:27px 22px; } .proof-grid,.explain-grid { grid-template-columns:1fr; } .script-section { padding:18px; } }
+    @media print { body { background:white; font-size:12pt; } .wrap { max-width:none; padding:0; } .hero { background:white; color:#111; box-shadow:none; border-radius:0; padding:0 0 14px; border-bottom:2px solid #222; } .hero .eyebrow,.hero p:last-child { color:#333; } nav,.toolbar,.proof { display:none!important; } .layout { display:block; margin:15px 0; } .script-section,.explainer { border:0; border-bottom:1px solid #aaa; border-radius:0; break-inside:avoid; padding:12px 0; } .explain { break-before:page; } .explain-grid { grid-template-columns:1fr 1fr; } .note,.evidence { background:white; border-color:#aaa; color:#333; } a { color:#111; text-decoration:none; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="hero">
+      <p class="eyebrow">Advanced SQL · Urban Mobility Database · Presenter copy</p>
+      <h1>Final presentation speaking script</h1>
+      <p>Read this alongside the PPT and the live application. Use the evidence switches below only after your teammate sends proof from the actual presentation laptop. The script keeps source implementation separate from runtime demonstration.</p>
+    </header>
+
+    <div class="toolbar">
+      <button class="button primary" type="button" id="copy-script">Copy current speaking script</button>
+      <button class="button" type="button" onclick="window.print()">Print / save as PDF</button>
+      <a class="button" href="#explained">Explain every component</a>
+      <span id="copy-status" role="status" aria-live="polite"></span>
+    </div>
+
+    <aside class="note"><strong>Accuracy rule:</strong> The CSV was inspected locally, and the pure Node tests passed. A live MySQL import, browser demo, build, and simulation persistence must be shown from the laptop where they actually succeeded. Do not read a “verified” sentence just because its checkbox is available.</aside>
+
+    <section class="proof" aria-label="Evidence switches">
+      <h2>Mark only evidence you actually received</h2>
+      <p>These switches change a few lines in the speaking script. They reset when the page is reopened.</p>
+      <div class="proof-grid">
+        <label><input type="checkbox" data-proof-toggle="import"> MySQL import and row count confirmed in Workbench</label>
+        <label><input type="checkbox" data-proof-toggle="site"> Website dashboard and filters demonstrated in browser</label>
+        <label><input type="checkbox" data-proof-toggle="sql"> SQL Lab, views, and benchmark demonstrated through the connected website</label>
+        <label><input type="checkbox" data-proof-toggle="simulation"> Simulation pair completed in MySQL and displayed in the browser</label>
+      </div>
+    </section>
+
+    <div class="layout">
+      <nav aria-label="Page contents">
+        <b>Jump to</b>
+        <a href="#opening">Opening</a><a href="#dataset">Dataset</a><a href="#architecture">Architecture</a>
+        <a href="#schema">Database design</a><a href="#import">Import and validation</a>
+        <a href="#dashboard">Dashboard</a><a href="#sql">Advanced SQL</a>
+        <a href="#views">Views and summary</a><a href="#index">Index comparison</a>
+        <a href="#reports">Reports and provenance</a><a href="#simulation">Simulation</a>
+        <a href="#milestone">Status and close</a><a href="#explained">Component explanations</a>
+      </nav>
+      <main>
+        <h2 class="section-title">Full speaking script</h2>
+        <p class="section-intro">Speak the paragraphs in order. “Show” lines are actions for you, not words to read aloud. Allow around 10–12 minutes, then shorten to match your allotted time.</p>
+
+        <section class="script-section" id="opening">
+          <div class="section-top"><h3>1. Opening and purpose</h3><span class="time">~40 sec</span></div>
+          <p class="cue">Title slide, then the project workflow.</p>
+          <p class="speech">Good morning, ma’am. Our project is an Urban Mobility Database for traffic analysis using Advanced SQL. The main problem we address is that traffic data becomes difficult to interpret when it is left as a flat file. We designed a relational MySQL database, a repeatable import process, SQL analyses, and a website that presents the results. We also built a separate synthetic junction experiment to compare two signal-control strategies.</p>
+          <p class="speech">For this presentation, I will show the data source, the database design, how the analysis reaches the website, the SQL features we implemented, and the evidence collected on the presentation laptop. I will keep the historical dataset and generated simulation results clearly separate.</p>
+        </section>
+
+        <section class="script-section" id="dataset">
+          <div class="section-top"><h3>2. Dataset and its limits</h3><span class="time">~55 sec</span></div>
+          <p class="cue">Dataset slide or Data &amp; Provenance screen.</p>
+          <p class="speech">We selected the Bangalore Traffic 2023–2024 CSV from Kaggle. The file we inspected contains 33,072 data rows and 18 source columns. It covers dates from 1 January 2023 through 9 August 2024, eight areas, sixteen road locations, and six named time blocks. Important fields include area, road or intersection name, date, traffic volume, reported average speed, congestion level, weather, and roadwork.</p>
+          <p class="speech">This file contains aggregate observations. It does not identify individual vehicles or trips, give road coordinates, or provide exact timestamps within a day. The measurement units and collection method are not documented in the file. We therefore use the source’s labels honestly: for example, “reported volume” rather than “unique vehicles,” and “Morning” as a category rather than a clock-hour interval.</p>
+        </section>
+
+        <section class="script-section" id="architecture">
+          <div class="section-top"><h3>3. End-to-end design</h3><span class="time">~45 sec</span></div>
+          <p class="cue">Workflow diagram or website navigation.</p>
+          <p class="speech">The historical-data flow is CSV, then validation and normalization, then MySQL tables and views, then server-side queries, and finally the website dashboard and reports. A separate simulation flow generates a repeatable sequence of vehicles, changes virtual signal phases, writes its own MySQL records, and displays the measured results. This separation prevents synthetic vehicles from being mistaken for historical Bangalore observations.</p>
+          <p class="speech">The website is built with Next.js and React. Its API uses the MySQL driver to execute parameterized SQL. MySQL Workbench connects to the same local database, so we can inspect the rows and query results independently of the website.</p>
+        </section>
+
+        <section class="script-section" id="schema">
+          <div class="section-top"><h3>4. Relational database design</h3><span class="time">~1 min</span></div>
+          <p class="cue">Schema Explorer or Workbench table list and foreign keys.</p>
+          <p class="speech">The schema defines fourteen tables in total. Ten support historical data and application state; four support the simulation. The main historical relationship is Area to Road to Road Segment to a logical Sensor location to Traffic Observation. Separate tables hold import metadata, the selected active import, and a daily summary. Primary keys identify records, foreign keys preserve the relationships, and checks constrain values such as nonnegative counts and allowed congestion categories.</p>
+          <p class="speech">We included Vehicle and Trip as extension tables because they were part of the original proposed model. They should remain empty for this CSV: one aggregate row cannot be turned into real vehicle identities or a real trip. Our Sensor identifiers are likewise logical labels for source locations, not claims that physical devices were present.</p>
+        </section>
+
+        <section class="script-section" id="import">
+          <div class="section-top"><h3>5. Data preparation, import, and quality</h3><span class="time">~1 min</span></div>
+          <p class="cue">Data &amp; Provenance page, importer report, then a Workbench count if available.</p>
+          <p class="speech">The import code reads the CSV, checks required columns, validates every row, and maps source fields into normalized columns. It retains all original source values in JSON so that a database result can be traced back to the CSV. It records a SHA-256 fingerprint of the file, counts accepted and rejected rows, and uses a transaction when activating an import. Loading the same file again reuses its recorded import rather than silently duplicating the dataset.</p>
+          <p class="speech">In our local file inspection, all 33,072 rows passed the validator and no exact duplicate rows were found. <span class="when-verified" data-proof="import">On the demonstrated laptop, the MySQL import and Workbench count confirm the loaded rows and active import metadata shown here.</span><span class="when-pending" data-proof="import">The live MySQL import count is still being verified on the demonstration laptop, so I am presenting the file-inspection result separately from the database result.</span></p>
+          <p class="evidence">Before using the verified line, confirm the actual database count, rejected count, checksum, and date range from your friend’s Workbench capture.</p>
+        </section>
+
+        <section class="script-section" id="dashboard">
+          <div class="section-top"><h3>6. Connected dashboard and filters</h3><span class="time">~1 min</span></div>
+          <p class="cue">Overview, then change one area, road, date range, or time block and apply.</p>
+          <p class="speech">The Overview displays source observation count, reported traffic volume, represented roads and areas, and average reported speed. Charts summarize daily volume, time blocks, congestion, weather, and roads. A separate card on Overview shows the latest completed synthetic simulation comparison and opens its saved run. Traffic Analysis lets us compare historical patterns in more detail. The filters select an area, road, date interval, time block, congestion category, weather, and roadwork status. The API builds the database conditions once and applies them consistently across the related historical results.</p>
+          <p class="speech"><span class="when-verified" data-proof="site">Here I change a filter and apply it. The cards and charts update from the selected rows in MySQL, showing how a database query becomes an interactive analysis.</span><span class="when-pending" data-proof="site">The connected screens and filter queries are implemented. The live browser demonstration is still being checked, so I will show the code path or captured evidence rather than claim this machine has just returned a successful result.</span></p>
+        </section>
+
+        <section class="script-section" id="sql">
+          <div class="section-top"><h3>7. Advanced SQL exercises</h3><span class="time">~1 min 20 sec</span></div>
+          <p class="cue">SQL Query Lab; run “Busiest roads,” “Daily road ranking,” and “Change since previous observed date.”</p>
+          <p class="speech">The SQL Lab contains eleven saved, read-only exercises. It is deliberately curated rather than an unrestricted SQL editor. The JOIN and GROUP BY exercise connects observations to roads and areas and summarizes the source-reported volume. A subquery compares each road total with the average road total. Common table expressions make a selected set of rows reusable and readable. Window functions such as DENSE_RANK rank roads within each date, while LAG compares a road with its previous observed date and exposes gaps between available dates. Other exercises use conditional aggregation, JSON extraction, and UNION.</p>
+          <p class="speech"><span class="when-verified" data-proof="sql">I am running the saved query now. The page shows the SQL, the bound parameters, the returned rows, and a driver round-trip time. This is actual SQL executed on the active MySQL import.</span><span class="when-pending" data-proof="sql">The saved SQL and parameter binding are implemented and passed source-level tests. Actual MySQL execution is still awaiting the local verification result, so I will not present sample rows or timings as measured facts.</span></p>
+        </section>
+
+        <section class="script-section" id="views">
+          <div class="section-top"><h3>8. Views and stored summary</h3><span class="time">~55 sec</span></div>
+          <p class="cue">Views &amp; Summaries screen and the three view names.</p>
+          <p class="speech">We define three ordinary MySQL views: a joined observation view, a daily road summary view, and a congestion report view. Views give the rest of the project reusable SQL definitions. For repeated daily reporting, we also store a summary table and refresh it through a transaction-protected stored procedure. The screen compares the view’s result with the stored result and reports whether they match.</p>
+          <p class="speech">MySQL does not provide a native materialized-view feature. Our daily table is a refreshable summary, and we describe it that way. <span class="when-verified" data-proof="sql">On this laptop the refresh and equality check have been executed, and the displayed status is the result we measured.</span><span class="when-pending" data-proof="sql">The refresh procedure and comparison code are ready, while the actual database equality check still needs a verified run.</span></p>
+        </section>
+
+        <section class="script-section" id="index">
+          <div class="section-top"><h3>9. Index and query-plan comparison</h3><span class="time">~55 sec</span></div>
+          <p class="cue">Index Benchmark screen; show both plans only if the query completed.</p>
+          <p class="speech">The observation table has an index on logical source location and observation date. The benchmark runs an equivalent location-and-date query with and without an index hint. It checks that the returned rows have the same checksum, collects three warmed driver round-trip timings for each version, and requests MySQL EXPLAIN plans, including EXPLAIN ANALYZE. The purpose is to study how an index changes the execution plan and measured response on this machine.</p>
+          <p class="speech"><span class="when-verified" data-proof="sql">These are the plans and times produced by the connected MySQL server. I will describe what they show, without assuming the indexed version is always faster.</span><span class="when-pending" data-proof="sql">The benchmark is implemented, but measured plans and timing still need the connected server, so I am not claiming a speedup yet.</span></p>
+        </section>
+
+        <section class="script-section" id="reports">
+          <div class="section-top"><h3>10. Reports, provenance, and source trace</h3><span class="time">~50 sec</span></div>
+          <p class="cue">Reports page, then Data &amp; Provenance page.</p>
+          <p class="speech">The Reports screen offers previews for busiest roads, time blocks, congestion, daily ranking, weather association, and original source fields. It can export the currently filtered rows to CSV, with quoting and protection against spreadsheet formulas. The provenance screen shows the source file, import identifier, checksum, quality counts, source columns, and known limits. A JSON query can retrieve fields exactly as they appeared in the original CSV, which helps us audit our normalization.</p>
+          <p class="speech">Road Patterns is a comparison of source road names grouped by area. It is a schematic, not a geographic map, because the dataset has no coordinates or road geometry. Weather comparisons describe associations in the rows; they do not prove that weather caused traffic changes.</p>
+        </section>
+
+        <section class="script-section" id="simulation">
+          <div class="section-top"><h3>11. Synthetic traffic-signal experiment</h3><span class="time">~1 min 20 sec</span></div>
+          <p class="cue">Live Simulation page; run one surge scenario with seed 42 if verified.</p>
+          <p class="speech">The simulation is a separate, deterministic four-way junction model. It generates arrivals for north, south, east, and west from a selected scenario and random seed. We run two controllers against exactly the same generated arrival sequence: fixed timing changes phase after twenty seconds of green, while adaptive timing considers queue pressure after a minimum of twelve seconds and caps green at thirty-eight seconds. Yellow and all-red intervals are included. This controller changes only virtual signals inside the model; no real traffic hardware is connected.</p>
+          <p class="speech">The worker records run totals, sampled queues, signal state, lane counts, and the reasons for each phase change in four separate MySQL tables. The page displays the junction, a queue chart, actions, and the fixed-versus-adaptive result. <span class="when-verified" data-proof="simulation">This pair has finished in MySQL. The demand fingerprints and arrival counts match, so the two control results are comparable. I will report the actual measured difference displayed here.</span><span class="when-pending" data-proof="simulation">The model and database-writing path are implemented, and pure model tests passed. The browser-to-MySQL simulation run is still being verified, so the live result is not yet a confirmed database demonstration.</span></p>
+          <p class="speech">The pure model with seed 42 shows adaptive control reducing experienced wait for both surge scenarios, but doing worse for balanced demand. That is useful: the project compares strategies rather than declaring one universally superior. These generated results do not estimate live Bangalore traffic.</p>
+        </section>
+
+        <section class="script-section" id="milestone">
+          <div class="section-top"><h3>12. Project status and close</h3><span class="time">~55 sec</span></div>
+          <p class="cue">Final status slide and the actual command or browser evidence; stop on a clear final sentence.</p>
+          <p class="speech">The source implementation now includes the relational schema, validated import logic, eleven SQL exercises, database-backed application code, reports, and the separate fixed-versus-adaptive junction experiment. Eighteen pure Node tests passed in the preparing environment. We distinguish this code result from the MySQL and browser results demonstrated on the presentation laptop.</p>
+          <p class="speech">The value of the project is a traceable path from source CSV through relational SQL to understandable traffic analysis, plus a repeatable synthetic experiment whose control decisions and results are stored for inspection. A future research extension would calibrate the simulation using directional and timing data that this CSV does not provide. Thank you.</p>
+        </section>
+
+        <section class="explain" id="explained">
+          <h2 class="section-title">Everything built, explained one by one</h2>
+          <p class="section-intro">Use these notes to understand the code and screen behind each part of the script. This section is explanation, not extra dialogue to read aloud.</p>
+          <div class="flow">Historical path: CSV → validation → normalized MySQL tables → views and parameterized API → dashboard, SQL lab, and reports</div>
+          <div class="explain-grid">
+            <article class="explainer"><h3>1. Source dataset</h3><p>The Kaggle CSV provides dated, aggregated traffic readings. The inspected file has 33,072 data rows, 18 columns, eight areas, and sixteen logical road locations.</p><p class="show"><strong>Show:</strong> Data &amp; Provenance. The file does not provide exact timestamps, coordinates, individual vehicles, or trips.</p></article>
+            <article class="explainer"><h3>2. CSV parser and validator</h3><p><code>src/lib/traffic/core.mjs</code> handles quoted CSV fields and validates dates, categories, nonnegative numbers, and required source columns. It records rejected rows and duplicates.</p><p class="show"><strong>Show:</strong> Import quality report. A parser pass does not prove a MySQL load.</p></article>
+            <article class="explainer"><h3>3. MySQL schema</h3><p><code>sql/001_schema.sql</code> defines the historical tables, keys, indexes, and checks. Area → Road → Road Segment → logical Sensor → Observation is the principal relationship.</p><p class="show"><strong>Show:</strong> Schema Explorer or Workbench relationships.</p></article>
+            <article class="explainer"><h3>4. Import and active dataset</h3><p><code>scripts/import-dataset.mjs</code> uses the file SHA-256 to identify an import, inserts validated rows in batches, activates the import transactionally, and refreshes the daily summary.</p><p class="show"><strong>Show:</strong> Workbench count and <code>dataset_import</code> only after a successful run.</p></article>
+            <article class="explainer"><h3>5. Original-field trace</h3><p>Each observation retains a <code>source_data</code> JSON copy of the 18 original field values. This lets a JSON query connect normalized columns back to a source row.</p><p class="show"><strong>Show:</strong> “Original source fields” SQL exercise.</p></article>
+            <article class="explainer"><h3>6. Website/API connection</h3><p><code>src/app/api/traffic/route.ts</code> receives filter and action requests. <code>src/lib/traffic/service.mjs</code> performs the SQL analysis, while the MySQL driver manages connections.</p><p class="show"><strong>Show:</strong> Change one filter and observe a different query result after verification.</p></article>
+            <article class="explainer"><h3>7. Overview and Traffic Analysis</h3><p>The dashboard aggregates source readings into cards, daily trends, time-block comparisons, congestion, weather, and road tables. Shared filters keep the historical analysis in one selected scope. A separately labeled card shows the latest completed synthetic comparison.</p><p class="show"><strong>Show:</strong> One filtered before-and-after result and the separate simulation card; call volume “source-reported.”</p></article>
+            <article class="explainer"><h3>8. Road Patterns</h3><p>Groups named roads by area and compares their reported volumes. The graphic is organizational, not a map, because the source has no geographic geometry.</p><p class="show"><strong>Show:</strong> Area cards if time permits.</p></article>
+            <article class="explainer"><h3>9. Schema Explorer</h3><p>Reads MySQL <code>INFORMATION_SCHEMA</code> for tables, columns, indexes, foreign keys, and live row counts. It also explains why Vehicle and Trip are empty extension tables.</p><p class="show"><strong>Show:</strong> A primary key, a foreign key, and a table count.</p></article>
+            <article class="explainer"><h3>10. SQL Query Lab</h3><p>Eleven saved SQL exercises cover JOIN, GROUP BY, subquery, CTE, DENSE_RANK, LAG, conditional aggregation, JSON, and UNION. User-selected filters become bound parameters.</p><p class="show"><strong>Show:</strong> A JOIN result, a window result, and the displayed SQL/parameters.</p></article>
+            <article class="explainer"><h3>11. Views and summaries</h3><p>Three ordinary views reuse joins and aggregates. <code>road_daily_summary</code> is a stored table refreshed by a procedure and compared against the daily view.</p><p class="show"><strong>Show:</strong> A MATCH status only after the procedure succeeds on MySQL.</p></article>
+            <article class="explainer"><h3>12. Index benchmark</h3><p>Compares equivalent queries with <code>IGNORE INDEX</code> and <code>FORCE INDEX</code> for <code>idx_obs_sensor_date</code>. It checks row equality and displays actual MySQL plans and timings.</p><p class="show"><strong>Show:</strong> Plans and measured times; do not promise a speedup.</p></article>
+            <article class="explainer"><h3>13. Reports and CSV</h3><p>Six report types preview saved-query results and export CSV under the applied filters. Export quotes cells and neutralizes spreadsheet formula starts.</p><p class="show"><strong>Show:</strong> One report preview and downloaded CSV if browser-verified.</p></article>
+            <article class="explainer"><h3>14. Simulation engine</h3><p><code>src/lib/simulation/engine.mjs</code> creates seeded arrivals and runs fixed or adaptive virtual signals. It tracks served vehicles, queue length, accumulated wait, and phase decisions.</p><p class="show"><strong>Show:</strong> A same-seed fixed/adaptive pair; label the model synthetic.</p></article>
+            <article class="explainer"><h3>15. Simulation storage and UI</h3><p><code>simulation_run</code>, <code>simulation_step</code>, <code>simulation_lane_sample</code>, and <code>simulation_action</code> keep generated results away from historical observations. The worker writes sampled state; the page polls and visualizes it.</p><p class="show"><strong>Show:</strong> Run rows, queue chart, and action timeline only after a successful MySQL run.</p></article>
+            <article class="explainer"><h3>16. Tests and handoff</h3><p>Eighteen pure Node tests passed for parsing, validation, SQL compilation, CSV export, deterministic simulation behavior, comparison integrity, and transactional sample rollback. Setup, import, typecheck, lint, build, database verification, and browser checks are separate evidence steps.</p><p class="show"><strong>Show:</strong> Actual command outputs supplied by your friend, including <code>npm run verify:simulation</code> after a completed pair.</p></article>
+          </div>
+        </section>
+
+        <footer class="footer">
+          <p><strong>Source within this project:</strong> <a href="../README.md">README</a> · <a href="SETUP_AND_ACCEPTANCE.md">setup and acceptance guide</a> · <a href="SQL_GUIDE.md">SQL guide</a> · <a href="SIMULATION_GUIDE.md">simulation guide</a>.</p>
+          <p>Prepared for a student review. This HTML is standalone and opens offline in a browser. It does not contain passwords, the dataset CSV, or live database results.</p>
+        </footer>
+      </main>
+    </div>
+  </div>
+  <script>
+    const toggles = [...document.querySelectorAll('[data-proof-toggle]')];
+    function updateProof() {
+      for (const toggle of toggles) {
+        const key = toggle.dataset.proofToggle;
+        document.querySelectorAll(`[data-proof="${key}"]`).forEach(node => {
+          const show = toggle.checked ? node.classList.contains('when-verified') : node.classList.contains('when-pending');
+          node.style.display = show ? 'inline' : 'none';
+        });
+      }
+    }
+    toggles.forEach(toggle => toggle.addEventListener('change', updateProof));
+    updateProof();
+    document.getElementById('copy-script').addEventListener('click', async () => {
+      const text = [...document.querySelectorAll('.script-section')].map(section => {
+        const title = section.querySelector('h3').textContent;
+        const paragraphs = [...section.querySelectorAll('.speech')].map(p => p.innerText.trim());
+        return [title, ...paragraphs].join('\n\n');
+      }).join('\n\n');
+      const status = document.getElementById('copy-status');
+      try {
+        await navigator.clipboard.writeText(text);
+        status.textContent = 'Speaking script copied.';
+      } catch {
+        const area = document.createElement('textarea');
+        area.value = text; document.body.appendChild(area); area.select();
+        const copied = document.execCommand('copy'); area.remove();
+        status.textContent = copied ? 'Speaking script copied.' : 'Copy unavailable in this browser; print the page instead.';
+      }
+    });
+  </script>
+</body>
+</html>

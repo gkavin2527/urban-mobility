@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 262" width="920" height="262" role="img" aria-labelledby="t d">
+  <title id="t">Urban Mobility data pipeline</title>
+  <desc id="d">A traffic CSV is validated and imported into MySQL, queried by a Next.js API and shown in a dashboard. A separate simulation worker writes its own tables into the same database.</desc>
+  <style>
+    text{font-family:"Segoe UI",system-ui,-apple-system,Helvetica,Arial,sans-serif}
+    .h{font-size:16px;font-weight:700;fill:#f1f5f9}
+    .s{font-size:12px;fill:#94a3b8}
+    .box{fill:#111c33;stroke:#334155;stroke-width:1.5}
+    .db{fill:#12304a;stroke:#38bdf8;stroke-width:1.8}
+    .sim{fill:#2a2310;stroke:#fbbf24;stroke-width:1.5}
+    .wire{stroke:#334155;stroke-width:2;fill:none}
+    .cap{font-size:12px;fill:#64748b}
+    .glow{animation:pulse 3.2s ease-in-out infinite}
+    @keyframes pulse{0%,100%{opacity:.15}50%{opacity:.55}}
+  </style>
+  <rect width="920" height="262" rx="16" fill="#0b1220"/>
+
+  <!-- wires -->
+  <path class="wire" d="M164 80H207M347 80H390M530 80H573M713 80H756"/>
+  <path class="wire" d="M460 166V122" stroke-dasharray="4 4"/>
+
+  <!-- data packets (drawn under the boxes so they only show on the wires) -->
+  <g fill="#38bdf8">
+    <circle r="4.5"><animateMotion dur="1.6s" repeatCount="indefinite" path="M164 80H207"/></circle>
+    <circle r="4.5"><animateMotion dur="1.6s" begin="0.8s" repeatCount="indefinite" path="M164 80H207"/></circle>
+    <circle r="4.5"><animateMotion dur="1.6s" begin="0.4s" repeatCount="indefinite" path="M347 80H390"/></circle>
+    <circle r="4.5"><animateMotion dur="1.6s" begin="1.2s" repeatCount="indefinite" path="M347 80H390"/></circle>
+    <circle r="4.5"><animateMotion dur="1.6s" begin="0.8s" repeatCount="indefinite" path="M530 80H573"/></circle>
+    <circle r="4.5"><animateMotion dur="1.6s" begin="0s" repeatCount="indefinite" path="M530 80H573"/></circle>
+    <circle r="4.5"><animateMotion dur="1.6s" begin="1.2s" repeatCount="indefinite" path="M713 80H756"/></circle>
+    <circle r="4.5"><animateMotion dur="1.6s" begin="0.4s" repeatCount="indefinite" path="M713 80H756"/></circle>
+  </g>
+  <g fill="#fbbf24">
+    <circle r="4.5"><animateMotion dur="1.4s" repeatCount="indefinite" path="M460 166V122"/></circle>
+    <circle r="4.5"><animateMotion dur="1.4s" begin="0.7s" repeatCount="indefinite" path="M460 166V122"/></circle>
+  </g>
+
+  <!-- arrow heads -->
+  <g fill="#475569">
+    <path d="M207 80l-7-4v8z"/><path d="M390 80l-7-4v8z"/><path d="M573 80l-7-4v8z"/><path d="M756 80l-7-4v8z"/>
+  </g>
+
+  <!-- pipeline boxes -->
+  <rect class="box" x="24" y="38" width="140" height="84" rx="12"/>
+  <text class="h" x="94" y="68" text-anchor="middle">Traffic CSV</text>
+  <text class="s" x="94" y="89" text-anchor="middle">Kaggle source file</text>
+  <text class="s" x="94" y="106" text-anchor="middle">SHA-256 checksum</text>
+
+  <rect class="box" x="207" y="38" width="140" height="84" rx="12"/>
+  <text class="h" x="277" y="68" text-anchor="middle">Import</text>
+  <text class="s" x="277" y="89" text-anchor="middle">validate · normalize</text>
+  <text class="s" x="277" y="106" text-anchor="middle">reject bad rows</text>
+
+  <rect class="glow" x="384" y="32" width="152" height="96" rx="15" fill="none" stroke="#38bdf8" stroke-width="3"/>
+  <rect class="db" x="390" y="38" width="140" height="84" rx="12"/>
+  <text class="h" x="460" y="68" text-anchor="middle">MySQL 8</text>
+  <text class="s" x="460" y="89" text-anchor="middle">tables · views · JSON</text>
+  <text class="s" x="460" y="106" text-anchor="middle">stored procedure</text>
+
+  <rect class="box" x="573" y="38" width="140" height="84" rx="12"/>
+  <text class="h" x="643" y="68" text-anchor="middle">Next.js API</text>
+  <text class="s" x="643" y="89" text-anchor="middle">parameterised SQL</text>
+  <text class="s" x="643" y="106" text-anchor="middle">server-side only</text>
+
+  <rect class="box" x="756" y="38" width="140" height="84" rx="12"/>
+  <text class="h" x="826" y="68" text-anchor="middle">Dashboard</text>
+  <text class="s" x="826" y="89" text-anchor="middle">charts · SQL lab</text>
+  <text class="s" x="826" y="106" text-anchor="middle">CSV export</text>
+
+  <!-- simulation worker -->
+  <rect class="sim" x="390" y="166" width="140" height="58" rx="12"/>
+  <text class="h" x="460" y="192" text-anchor="middle">Simulation</text>
+  <text class="s" x="460" y="211" text-anchor="middle">fixed vs adaptive</text>
+
+  <text class="cap" x="460" y="250" text-anchor="middle">Historical observations and synthetic simulation runs live in separate tables</text>
+</svg>
