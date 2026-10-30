@@ -32,15 +32,8 @@
   "include": [
     "next-env.d.ts",
     "next.config.ts",
-    "src/app/layout.tsx",
-    "src/app/page.tsx",
-    "src/app/api/health/route.ts",
-    "src/app/api/traffic/route.ts",
-    "src/app/api/simulation/route.ts",
-    "src/components/traffic/**/*.tsx",
-    "src/components/simulation/**/*.tsx",
-    "src/components/shared/sql-block.tsx",
-    "src/lib/utils.ts",
+    "src/**/*.ts",
+    "src/**/*.tsx",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts"
   ],

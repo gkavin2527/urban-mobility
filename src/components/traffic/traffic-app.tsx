@@ -1,98 +1,123 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Activity, BarChart3, BookOpen, Cable, ChevronRight, CircleHelp, Database, Download, Gauge, LayoutDashboard, LoaderCircle, Map, Menu, RefreshCw, Search, Server, Table2, TrafficCone, X } from "lucide-react";
-import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, ComposedChart, Legend, Line, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { SqlBlock } from "@/components/shared/sql-block";
+import { useMemo, useState } from "react";
+import { Activity, BarChart3, Cable, ChevronRight, CircleHelp, Database, Gauge, LayoutDashboard, LoaderCircle, Menu, RefreshCw, Search, TrafficCone, X, type LucideIcon } from "lucide-react";
 import { SimulationLab } from "@/components/simulation/simulation-lab";
-import { OverviewSimulationCard } from "@/components/simulation/overview-simulation-card";
+import { EMPTY, useApi, type Filters } from "./api";
+import { FilterBar } from "./filter-bar";
+import { Explore } from "./pages/explore";
+import { Overview } from "./pages/overview";
+import { Performance } from "./pages/performance";
+import { Provenance } from "./pages/provenance";
+import { Schema } from "./pages/schema";
+import { SqlLab } from "./pages/sql-lab";
+import { Loading } from "./ui";
 
-type Dict = Record<string, any>;
-type Filters = { area: string; road: string; start: string; end: string; timeBlock: string; congestion: string; weather: string; roadwork: string };
-const EMPTY: Filters = { area:"",road:"",start:"",end:"",timeBlock:"",congestion:"",weather:"",roadwork:"" };
-const NAV = [
-  {id:"dashboard",label:"Overview",icon:LayoutDashboard,group:"WORKSPACE"},
-  {id:"simulation",label:"Live simulation",icon:TrafficCone,group:"WORKSPACE"},
-  {id:"traffic",label:"Traffic analysis",icon:BarChart3,group:"WORKSPACE"},
-  {id:"spatio",label:"Road patterns",icon:Map,group:"WORKSPACE"},
-  {id:"explorer",label:"Schema explorer",icon:Database,group:"DATABASE"},
-  {id:"sqllab",label:"SQL query lab",icon:Search,group:"DATABASE"},
-  {id:"optimization",label:"Index benchmark",icon:Gauge,group:"DATABASE"},
-  {id:"views",label:"Views & summaries",icon:Table2,group:"DATABASE"},
-  {id:"dataflow",label:"Data & provenance",icon:Cable,group:"PROJECT"},
-  {id:"reports",label:"Reports",icon:Download,group:"PROJECT"},
+type NavItem = { id: string; label: string; icon: LucideIcon; group: string; subtitle: string; filters?: boolean };
+
+const NAV: NavItem[] = [
+  { id: "overview", label: "Overview", icon: LayoutDashboard, group: "ANALYZE", filters: true, subtitle: "Headline numbers, notable roads and trends in the imported traffic readings." },
+  { id: "explore", label: "Explore", icon: BarChart3, group: "ANALYZE", filters: true, subtitle: "Time, weather, roads, areas and operational measures in one place." },
+  { id: "simulation", label: "Live simulation", icon: TrafficCone, group: "ANALYZE", subtitle: "Fixed and adaptive signal control on the same synthetic traffic demand." },
+  { id: "schema", label: "Schema", icon: Database, group: "DATABASE", subtitle: "Tables, columns, keys and live row counts in the configured MySQL database." },
+  { id: "sqllab", label: "SQL lab", icon: Search, group: "DATABASE", filters: true, subtitle: "Curated advanced SQL against the active import, with CSV export." },
+  { id: "performance", label: "Performance", icon: Gauge, group: "DATABASE", subtitle: "Real MySQL index plans, plus the views and refreshable summary table." },
+  { id: "provenance", label: "Data & provenance", icon: Cable, group: "PROJECT", subtitle: "Where the data came from, how it was validated, and what it cannot tell you." },
 ];
-const SAVED: Record<string,string> = {"busiest-roads":"Busiest roads","time-blocks":"Time block comparison","above-average":"Roads above average","congestion":"High congestion by road","daily-ranking":"Daily volume ranking","day-change":"Change between observed dates","slow-roads":"Slow road locations","morning-evening":"Morning vs evening","weather":"Weather association","source-json":"Original source fields","set-union":"High congestion or roadwork"};
-const fmt=(v:any,d=0)=>Number(v||0).toLocaleString(undefined,{maximumFractionDigits:d});
-const pct=(v:any)=>`${fmt(v,1)}%`;
-function qs(filters:Filters){const p=new URLSearchParams();for(const [k,v] of Object.entries(filters))if(v)p.set(k,v);return p.toString();}
-async function getApi(action:string,filters:Filters=EMPTY,extra:Record<string,string>={}){const p=new URLSearchParams({action,...extra});for(const [k,v]of Object.entries(filters))if(v)p.set(k,v);const r=await fetch(`/api/traffic?${p}`,{cache:"no-store"});const j=await r.json();if(!r.ok)throw Error(j.error||`Request failed (${r.status})`);return j;}
-async function postApi(body:Dict){const r=await fetch("/api/traffic",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body),cache:"no-store"});const j=await r.json();if(!r.ok)throw Error(j.error||`Request failed (${r.status})`);return j;}
-function Panel({title,sub,children,action}:{title:string;sub?:string;children:React.ReactNode;action?:React.ReactNode}){return <section className="panel"><div className="panel-head"><div><h2>{title}</h2>{sub&&<p>{sub}</p>}</div>{action}</div>{children}</section>}
-function Empty({children="No rows match the selected filters."}:{children?:React.ReactNode}){return <div className="empty">{children}</div>}
-function GridTable({rows,columns}:{rows:Dict[];columns:[string,string,(r:Dict)=>React.ReactNode][]}){return <div className="table-wrap"><table><thead><tr>{columns.map(c=><th key={c[0]}>{c[1]}</th>)}</tr></thead><tbody>{rows.length?rows.map((r,i)=><tr key={i}>{columns.map(c=><td key={c[0]}>{c[2](r)}</td>)}</tr>):<tr><td colSpan={columns.length} className="empty-cell">No rows match the selected filters.</td></tr>}</tbody></table></div>}
-function Metric({label,value,hint,icon:Icon,tone="blue"}:{label:string;value:string;hint:string;icon:any;tone?:string}){return <div className="metric"><span className={`metric-icon ${tone}`}><Icon size={18}/></span><div className="metric-label">{label}</div><div className="metric-value">{value}</div><div className="metric-hint">{hint}</div></div>}
-function ChartFrame({children}:{children:React.ReactNode}){return <div className="chart-frame">{children}</div>}
-function Stamp({children}:{children:React.ReactNode}){return <span className="stamp">{children}</span>}
+const GROUPS = ["ANALYZE", "DATABASE", "PROJECT"];
+const NEEDS_ANALYTICS = ["overview", "explore"];
 
-export function TrafficApp(){
-  const [page,setPage]=useState("dashboard"),[simulationGroup,setSimulationGroup]=useState(""),[boot,setBoot]=useState<Dict|null>(null),[bootError,setBootError]=useState(""),[draft,setDraft]=useState<Filters>(EMPTY),[applied,setApplied]=useState<Filters>(EMPTY),[analytics,setAnalytics]=useState<Dict|null>(null),[analyticsError,setAnalyticsError]=useState(""),[busy,setBusy]=useState(false),[mobile,setMobile]=useState(false);
-  const loadBoot=useCallback(async()=>{setBootError("");try{setBoot(await getApi("bootstrap"));}catch(e){setBootError((e as Error).message)}},[]);
-  useEffect(()=>{void loadBoot()},[loadBoot]);
-  useEffect(()=>{if(!boot)return;let live=true;setAnalyticsError("");getApi("analytics",applied).then(d=>{if(live)setAnalytics(d)}).catch(e=>{if(live)setAnalyticsError((e as Error).message)});return()=>{live=false}},[boot,applied]);
-  const nav=useMemo(()=>NAV.find(n=>n.id===page)!,[page]);
-  const change=(key:keyof Filters,value:string)=>setDraft(old=>({...old,[key]:value,...(key==="area"?{road:""}:{})}));
-  const roads:Dict[]=boot?.roads||[];const areaRoads=roads.filter(r=>!draft.area||r.area===draft.area);
-  const clickNav=(id:string)=>{if(id==="simulation")setSimulationGroup("");setPage(id);setMobile(false)};
-  if(bootError&&!boot)return <div className="setup-screen"><div className="setup-card"><div className="setup-icon"><Database/></div><div className="eyebrow">LOCAL MYSQL CONNECTION</div><h1>Connect your traffic database</h1><p>{bootError}</p><div className="setup-steps"><b>Finish the local setup</b><code>npm run db:setup</code><code>npm run data:import</code><span>Use the same MySQL credentials as your Workbench connection. The imported CSV is read from the configured local path.</span></div><button className="btn primary" onClick={()=>void loadBoot()}><RefreshCw size={15}/> Retry connection</button></div></div>;
-  if(!boot)return <div className="loading-screen"><LoaderCircle className="spin"/> Loading MySQL traffic workspace…</div>;
-  const src=boot.source||{},q=qs(applied),urlFilters=applied;
-  return <div className="app-shell">
-    <aside className={`sidebar ${mobile?"open":""}`}><div className="brand"><div className="brand-mark"><Activity size={21}/></div><div><strong>ASQL</strong><span>URBAN MOBILITY LAB</span></div><button className="mobile-close" onClick={()=>setMobile(false)} aria-label="Close menu"><X size={18}/></button></div><div className="connection"><i/><span>MySQL connected</span><small>{boot.database?.version||"MySQL"}</small></div>{["WORKSPACE","DATABASE","PROJECT"].map(group=><div className="nav-group" key={group}><div className="nav-label">{group}</div>{NAV.filter(n=>n.group===group).map(item=><button key={item.id} className={`nav-item ${page===item.id?"active":""}`} onClick={()=>clickNav(item.id)}><item.icon size={17}/><span>{item.label}</span>{page===item.id&&<ChevronRight size={14} className="nav-arrow"/>}</button>)}</div>)}<div className="sidebar-foot"><span className="foot-dot"/>Dataset-backed workspace<div>Local MySQL · SQL + simulation</div></div></aside>
-    {mobile&&<button aria-label="Close navigation" className="scrim" onClick={()=>setMobile(false)}/>}
-    <div className="main-shell"><header className="topbar"><button className="menu-button" onClick={()=>setMobile(true)} aria-label="Open menu"><Menu size={19}/></button><div className="breadcrumbs"><span>Urban mobility</span><b>/</b><strong>{nav.label}</strong></div><div className="top-status"><span><i/>MySQL 8</span><span className="top-database"><Database size={14}/>{boot.database?.database_name}</span></div></header>
-      <main className="main-content"><div className="content-width"><div className="page-intro"><div><div className="eyebrow">{nav.group}</div><h1>{pageTitle(page)}</h1><p>{pageSubtitle(page)}</p></div><div className="intro-stamp"><span className="stamp-green"/>LIVE FROM LOCAL MYSQL</div></div>
-        {page!=="dataflow"&&page!=="simulation"&&<FilterBar draft={draft} set={change} boot={boot} roads={areaRoads} apply={()=>setApplied({...draft})} reset={()=>{setDraft(EMPTY);setApplied(EMPTY)}} busy={busy}/>}
-        {analyticsError&&<div className="error-banner"><CircleHelp size={17}/><span>{analyticsError}</span><button onClick={()=>{setApplied({...applied})}}>Retry</button></div>}
-        {page!=="dataflow"&&page!=="simulation"&&!analytics&&<div className="loading-inline"><LoaderCircle className="spin"/> Querying the active dataset…</div>}
-        {page==="simulation"&&<SimulationLab initialGroup={simulationGroup}/>}
-        {page==="dashboard"&&analytics&&<><OverviewSimulationCard openSimulation={group=>{setSimulationGroup(group||"");setPage("simulation")}}/><Dashboard data={analytics}/></>}
-        {page==="traffic"&&analytics&&<Traffic data={analytics}/>}
-        {page==="spatio"&&analytics&&<Spatial data={analytics} boot={boot}/>}
-        {page==="explorer"&&<Explorer/>}
-        {page==="sqllab"&&<QueryLab filters={urlFilters}/>}
-        {page==="optimization"&&<Benchmark boot={boot} filters={urlFilters} roads={roads} setBusy={setBusy}/>}
-        {page==="views"&&<Views/>}
-        {page==="dataflow"&&<DataFlow boot={boot}/>}
-        {page==="reports"&&<Reports filters={urlFilters}/>}
-        <footer className="page-footer"><span>ASQL · Advanced SQL Urban Mobility</span><span>Source readings are historical aggregates; labels preserve their original meaning.</span></footer>
-      </div></main>
+export function TrafficApp() {
+  const [page, setPage] = useState("overview");
+  const [simulationGroup, setSimulationGroup] = useState("");
+  const [draft, setDraft] = useState<Filters>(EMPTY);
+  const [applied, setApplied] = useState<Filters>(EMPTY);
+  const [busy, setBusy] = useState(false);
+  const [mobile, setMobile] = useState(false);
+
+  const boot = useApi("bootstrap");
+  const nav = useMemo(() => NAV.find(n => n.id === page)!, [page]);
+  const analytics = useApi("analytics", applied, !!boot.data && NEEDS_ANALYTICS.includes(page));
+
+  if (boot.error && !boot.data) {
+    return (
+      <div className="setup-screen"><div className="setup-card">
+        <div className="setup-icon"><Database /></div>
+        <div className="eyebrow">LOCAL MYSQL CONNECTION</div>
+        <h1>Connect your traffic database</h1>
+        <p>{boot.error}</p>
+        <div className="setup-steps">
+          <b>Finish the local setup</b>
+          <code>npm run db:setup</code>
+          <code>npm run data:import</code>
+          <span>Use the same MySQL credentials as your Workbench connection.</span>
+        </div>
+        <button className="btn primary" onClick={boot.reload}><RefreshCw size={15} /> Retry connection</button>
+      </div></div>
+    );
+  }
+  if (!boot.data) return <div className="loading-screen"><LoaderCircle className="spin" /> Loading MySQL traffic workspace…</div>;
+
+  const b = boot.data;
+  const roads: Record<string, any>[] = b.roads || [];
+  const areaRoads = roads.filter(r => !draft.area || r.area === draft.area);
+  const change = (key: keyof Filters, value: string) => setDraft(old => ({ ...old, [key]: value, ...(key === "area" ? { road: "" } : {}) }));
+  const go = (id: string) => { if (id === "simulation") setSimulationGroup(""); setPage(id); setMobile(false); };
+  const filterBar = (
+    <FilterBar draft={draft} set={change} boot={b} roads={areaRoads} busy={busy}
+      apply={() => setApplied({ ...draft })} reset={() => { setDraft(EMPTY); setApplied(EMPTY); }} />
+  );
+  const filterKey = JSON.stringify(applied);
+
+  return (
+    <div className="app-shell">
+      <aside className={`sidebar ${mobile ? "open" : ""}`}>
+        <div className="brand">
+          <div className="brand-mark"><Activity size={21} /></div>
+          <div><strong>ASQL</strong><span>URBAN MOBILITY LAB</span></div>
+          <button className="mobile-close" onClick={() => setMobile(false)} aria-label="Close menu"><X size={18} /></button>
+        </div>
+        {GROUPS.map(group => (
+          <div className="nav-group" key={group}>
+            <div className="nav-label">{group}</div>
+            {NAV.filter(n => n.group === group).map(item => (
+              <button key={item.id} className={`nav-item ${page === item.id ? "active" : ""}`} onClick={() => go(item.id)}>
+                <item.icon size={17} /><span>{item.label}</span>
+                {page === item.id && <ChevronRight size={14} className="nav-arrow" />}
+              </button>
+            ))}
+          </div>
+        ))}
+      </aside>
+      {mobile && <button aria-label="Close navigation" className="scrim" onClick={() => setMobile(false)} />}
+
+      <div className="main-shell">
+        <header className="topbar">
+          <button className="menu-button" onClick={() => setMobile(true)} aria-label="Open menu"><Menu size={19} /></button>
+          <div className="breadcrumbs"><span>Urban mobility</span><b>/</b><strong>{nav.label}</strong></div>
+          <div className="top-status"><span><i />MySQL {b.database?.version}</span><span className="top-database"><Database size={14} />{b.database?.database_name}</span></div>
+        </header>
+
+        <main className="main-content"><div className="content-width">
+          <div className="page-intro">
+            <div><div className="eyebrow">{nav.group}</div><h1>{nav.label}</h1><p>{nav.subtitle}</p></div>
+          </div>
+
+          {nav.filters && filterBar}
+          {NEEDS_ANALYTICS.includes(page) && analytics.error && (
+            <div className="error-banner"><CircleHelp size={17} /><span>{analytics.error}</span><button onClick={analytics.reload}>Retry</button></div>
+          )}
+          {NEEDS_ANALYTICS.includes(page) && analytics.loading && <Loading>Querying the active dataset…</Loading>}
+
+          {page === "overview" && analytics.data && <Overview data={analytics.data} openSimulation={group => { setSimulationGroup(group || ""); setPage("simulation"); }} />}
+          {page === "explore" && analytics.data && <Explore data={analytics.data} boot={b} filters={applied} />}
+          {page === "simulation" && <SimulationLab initialGroup={simulationGroup} />}
+          {page === "schema" && <Schema />}
+          {page === "sqllab" && <SqlLab key={filterKey} filters={applied} queries={b.queries || []} />}
+          {page === "performance" && <Performance boot={b} filters={applied} roads={roads} filterBar={filterBar} setBusy={setBusy} />}
+          {page === "provenance" && <Provenance boot={b} />}
+        </div></main>
+      </div>
     </div>
-  </div>
+  );
 }
-
-function FilterBar({draft,set,boot,roads,apply,reset,busy}:{draft:Filters;set:(k:keyof Filters,v:string)=>void;boot:Dict;roads:Dict[];apply:()=>void;reset:()=>void;busy:boolean}){return <div className="filterbar"><div className="filter-heading"><div><strong>Analysis scope</strong><span>Filters apply consistently across database charts and query tools</span></div><Stamp>{boot.source?.min_date} — {boot.source?.max_date}</Stamp></div><div className="filter-controls"><label>Area<select value={draft.area} onChange={e=>set("area",e.target.value)}><option value="">All areas</option>{boot.areas.map((a:string)=><option key={a}>{a}</option>)}</select></label><label>Road<select value={draft.road} onChange={e=>set("road",e.target.value)}><option value="">All roads</option>{roads.map(r=><option key={r.road_id} value={r.road_id}>{r.road_name}</option>)}</select></label><label>From<input type="date" min={boot.source?.min_date} max={draft.end||boot.source?.max_date} value={draft.start} onChange={e=>set("start",e.target.value)}/></label><label>To<input type="date" min={draft.start||boot.source?.min_date} max={boot.source?.max_date} value={draft.end} onChange={e=>set("end",e.target.value)}/></label><label>Time block<select value={draft.timeBlock} onChange={e=>set("timeBlock",e.target.value)}><option value="">All blocks</option>{boot.timeBlocks.map((v:string)=><option key={v}>{v}</option>)}</select></label><label>Congestion<select value={draft.congestion} onChange={e=>set("congestion",e.target.value)}><option value="">All levels</option>{["Low","Medium","High"].map(v=><option key={v}>{v}</option>)}</select></label><label>Weather<select value={draft.weather} onChange={e=>set("weather",e.target.value)}><option value="">All weather</option>{boot.weather.map((v:string)=><option key={v}>{v}</option>)}</select></label><label>Roadwork<select value={draft.roadwork} onChange={e=>set("roadwork",e.target.value)}><option value="">Any</option><option>Yes</option><option>No</option></select></label><div className="filter-actions"><button className="btn primary" onClick={apply} disabled={busy}>Apply</button><button className="btn quiet" onClick={reset}>Reset</button></div></div></div>}
-
-function Dashboard({data}:{data:Dict}){const k=data.kpis||{};return <><div className="metric-grid"><Metric icon={Database} label="Source observations" value={fmt(k.readings)} hint="Rows matching current filters"/><Metric icon={Activity} label="Recorded traffic volume" value={fmt(k.recorded_volume)} hint="Sum of source-reported volume" tone="teal"/><Metric icon={Map} label="Road locations" value={fmt(k.roads)} hint={`${fmt(k.areas)} represented areas`} tone="purple"/><Metric icon={Gauge} label="Average reported speed" value={fmt(k.average_speed,1)} hint="Source unit not documented" tone="amber"/></div><div className="chart-grid"><Panel title="Recorded volume over time" sub="Daily sum · dates follow the source observations"><ChartFrame>{data.daily?.length?<ResponsiveContainer width="100%" height="100%"><AreaChart data={data.daily}><defs><linearGradient id="volfill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#3979c6" stopOpacity={.2}/><stop offset="95%" stopColor="#3979c6" stopOpacity={0}/></linearGradient></defs><CartesianGrid stroke="#edf1f6" vertical={false}/><XAxis dataKey="date" tickFormatter={(s)=>String(s).slice(5)} minTickGap={35}/><YAxis tickFormatter={s=>fmt(s/1000)+"k"} width={48}/><Tooltip formatter={(v:any)=>fmt(v)} labelFormatter={s=>`Date ${s}`}/><Area type="monotone" dataKey="recorded_volume" name="Reported volume" stroke="#3979c6" strokeWidth={2} fill="url(#volfill)"/></AreaChart></ResponsiveContainer>:<Empty/>}</ChartFrame></Panel><Panel title="Traffic by time block" sub="Source categories · no hourly timestamps inferred"><ChartFrame>{data.timeBlocks?.length?<ResponsiveContainer width="100%" height="100%"><BarChart data={data.timeBlocks}><CartesianGrid stroke="#edf1f6" vertical={false}/><XAxis dataKey="time_block" tick={{fontSize:11}}/><YAxis width={44}/><Tooltip formatter={(v:any)=>fmt(v)}/><Bar dataKey="recorded_volume" name="Reported volume" fill="#4786cf" radius={[5,5,0,0]} maxBarSize={44}/></BarChart></ResponsiveContainer>:<Empty/>}</ChartFrame></Panel></div><div className="split-grid"><Panel title="Road locations by reported volume" sub="Top rows within the current scope"><GridTable rows={(data.roads||[]).slice(0,7)} columns={[["road_name","ROAD",r=><><b>{r.road_name}</b><small className="subcell">{r.area}</small></>],["recorded_volume","VOLUME",r=>fmt(r.recorded_volume)],["average_speed","AVG SPEED",r=>fmt(r.average_speed,1)],["high_percent","HIGH",r=><span className="pill-red">{pct(r.high_percent)}</span>]]}/></Panel><Panel title="Congestion mix" sub="Share of matching source readings"><div className="pie-wrap"><ChartFrame>{data.congestion?.length?<ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={data.congestion} dataKey="readings" nameKey="congestion_level" innerRadius={53} outerRadius={79} paddingAngle={3}>{data.congestion.map((_:any,i:number)=><Cell key={i} fill={["#39a681","#e0a43a","#db625e"][i%3]}/>)}</Pie><Tooltip formatter={(v:any)=>fmt(v)}/></PieChart></ResponsiveContainer>:<Empty/>}</ChartFrame><div className="legend-list">{data.congestion?.map((r:Dict,i:number)=><div key={r.congestion_level}><i style={{background:["#39a681","#e0a43a","#db625e"][i%3]}}/><span>{r.congestion_level}</span><b>{pct(100*r.readings/Math.max(1,k.readings))}</b></div>)}</div></div></Panel></div><div className="note-bar"><CircleHelp size={16}/><span><b>Reading the numbers:</b> the source contains aggregated traffic observations, not individual vehicle counts. Average speed is the arithmetic mean of readings. Units and publisher measurement methods were not documented.</span></div></>}
-
-function Traffic({data}:{data:Dict}){return <><div className="metric-grid compact"><Metric icon={Activity} label="Matching readings" value={fmt(data.kpis?.readings)} hint="Current filter scope"/><Metric icon={Gauge} label="High congestion" value={pct(data.kpis?.high_percent)} hint="Share of readings" tone="red"/><Metric icon={Server} label="Weather categories" value={fmt(data.weather?.length)} hint="Observed source labels" tone="teal"/></div><div className="chart-grid"><Panel title="Reported speed by time block" sub="Arithmetic mean across source rows"><ChartFrame>{data.timeBlocks?.length?<ResponsiveContainer width="100%" height="100%"><ComposedChart data={data.timeBlocks}><CartesianGrid stroke="#edf1f6" vertical={false}/><XAxis dataKey="time_block"/><YAxis/><Tooltip/><Bar dataKey="average_speed" name="Average speed" fill="#bfd6ef" radius={[5,5,0,0]}/><Line dataKey="readings" name="Readings" stroke="#3778c2" strokeWidth={2}/></ComposedChart></ResponsiveContainer>:<Empty/>}</ChartFrame></Panel><Panel title="Weather and reported speed" sub="Descriptive comparison, not causal evidence"><ChartFrame>{data.weather?.length?<ResponsiveContainer width="100%" height="100%"><BarChart data={data.weather}><CartesianGrid stroke="#edf1f6" vertical={false}/><XAxis dataKey="weather"/><YAxis/><Tooltip/><Bar dataKey="average_speed" name="Average speed" fill="#4f8dcc" radius={[5,5,0,0]}/></BarChart></ResponsiveContainer>:<Empty/>}</ChartFrame></Panel></div><Panel title="Latest matching source rows" sub="Values are returned from the active MySQL import"><GridTable rows={data.observations||[]} columns={[["observation_date","DATE",r=>r.observation_date],["area","AREA",r=>r.area],["road_name","ROAD",r=>r.road_name],["time_block","TIME BLOCK",r=>r.time_block],["vehicle_count","REPORTED VOLUME",r=>fmt(r.vehicle_count)],["average_speed","SPEED",r=>fmt(r.average_speed,1)],["congestion_level","CONGESTION",r=><span className={r.congestion_level==="High"?"pill-red":"pill-blue"}>{r.congestion_level}</span>],["weather","WEATHER",r=>r.weather]]}/></Panel></>}
-
-function Spatial({data,boot}:{data:Dict;boot:Dict}){const grouped=(data.roads||[]).reduce((m:Dict,r:Dict)=>{(m[r.area]??=[]).push(r);return m},{});return <><div className="note-bar"><Map size={17}/><span>Area cards are an <b>organizational view of dataset locations</b>, not a geographic map. The source has no coordinates, road geometry, GPS traces, or verified physical sensor identifiers.</span></div><div className="area-grid">{(boot.areas||[]).map((area:string,i:number)=>{const rows=grouped[area]||[],vol=rows.reduce((s:number,r:Dict)=>s+Number(r.recorded_volume||0),0),max=Math.max(1,...rows.map((r:Dict)=>Number(r.recorded_volume||0)));return <div className="area-card" key={area}><div className="area-card-head"><div><span className="area-index">0{i+1}</span><h3>{area}</h3></div><span className="area-loc"><Map size={13}/> {rows.length} source roads</span></div><div className="area-total">{fmt(vol)} <small>reported volume</small></div><div className="road-bars">{rows.slice(0,4).map((r:Dict)=><div className="road-bar" key={r.road_id}><div><span>{r.road_name}</span><b>{fmt(r.recorded_volume)}</b></div><i><em style={{width:`${Math.max(4,100*Number(r.recorded_volume||0)/max)}%`}}/></i></div>)}{!rows.length&&<Empty>No road readings in this filter scope.</Empty>}</div></div>})}</div></>}
-
-function usePanel(action:string,active=true,filters:Filters=EMPTY){const [data,setData]=useState<Dict|null>(null),[error,setError]=useState("");const key=JSON.stringify(filters);const refresh=useCallback(async()=>{setError("");try{setData(await getApi(action,filters))}catch(e){setError((e as Error).message)}},[action,key]);useEffect(()=>{if(active)void refresh()},[active,refresh]);return {data,error,refresh,setData}}
-function Explorer(){const {data,error,refresh}=usePanel("schema");return <><div className="note-bar"><Database size={17}/><span>This page reads <b>INFORMATION_SCHEMA and live table counts</b> from the configured project database.</span></div>{error&&<ErrorCard message={error} retry={refresh}/>}<div className="schema-grid">{(data?.tables||[]).map((t:Dict)=><div className="schema-card" key={t.table_name}><div className="schema-title"><Table2 size={16}/><b>{t.table_name}</b><span>{t.row_count===null?"VIEW":`${fmt(t.row_count)} rows`}</span></div><div className="schema-columns">{(t.columns||[]).map((c:Dict)=><div key={c.column_name}><span>{c.column_name}{c.column_key==="PRI"&&<em> PK</em>}</span><code>{c.column_type}</code></div>)}</div></div>)}</div><Panel title="Foreign key relationships" sub="Declared in MySQL schema"><GridTable rows={data?.relations||[]} columns={[["table_name","TABLE",r=>r.table_name],["column_name","COLUMN",r=>r.column_name],["referenced_table","REFERENCES",r=><b>{r.referenced_table}.{r.referenced_column}</b>]]}/></Panel><Panel title="Source coverage boundaries"><p className="coverage-copy">The dataset does not supply identifiable vehicles or trips. Those tables are present as an extension point and contain no invented rows. Sensor identifiers represent logical dataset locations only.</p><div className="coverage-grid">{Object.entries(data?.coverage||{}).map(([k,v])=><div key={k}><span>{k}</span><b>{String(v)}</b></div>)}</div></Panel></>}
-
-function QueryLab({filters}:{filters:Filters}){const [id,setId]=useState("busiest-roads"),[result,setResult]=useState<Dict|null>(null),[error,setError]=useState(""),[running,setRunning]=useState(false);useEffect(()=>{setResult(null);setError("")},[JSON.stringify(filters)]);async function run(){setRunning(true);setError("");try{setResult(await postApi({action:"query",id,filters}))}catch(e){setError((e as Error).message)}finally{setRunning(false)}}return <><div className="query-picker"><label>Saved SQL exercise<select value={id} onChange={e=>{setId(e.target.value);setResult(null)}}>{Object.entries(SAVED).map(([k,v])=><option key={k} value={k}>{v}</option>)}</select></label><button className="btn primary" onClick={()=>void run()} disabled={running}>{running?<LoaderCircle className="spin" size={15}/>:<Search size={15}/>} Run query</button></div><div className="query-hint"><BookOpen size={15}/><span>Read-only prepared query · active import and analysis filters · parameter values are passed separately from SQL.</span></div>{error&&<ErrorCard message={error}/ >}{result&&<><div className="result-meta"><Stamp>{result.row_count} rows</Stamp><Stamp>{fmt(result.round_trip_ms,3)} ms driver round trip</Stamp><Stamp>Import #{result.import_id}</Stamp></div><Panel title={result.title} sub={result.why}><div className="feature-row">{result.features?.map((f:string)=><span className="feature" key={f}>{f}</span>)}</div><div className="sql-wrap"><SqlBlock sql={result.sql}/></div><div className="params"><b>Bound parameters</b><code>{JSON.stringify(result.parameters)}</code></div><GridTable rows={result.rows||[]} columns={(result.columns||[]).map((c:string)=>[c,c.replaceAll("_"," ").toUpperCase(),(r:Dict)=>typeof r[c]==="number"?fmt(r[c],2):String(r[c]??"—")] as [string,string,(r:Dict)=>React.ReactNode])}/><p className="result-foot">Timing is measured around the database-driver request and row retrieval. It is not server CPU time.</p></Panel></>}</>}
-
-function Benchmark({boot,filters,roads,setBusy}:{boot:Dict;filters:Filters;roads:Dict[];setBusy:(v:boolean)=>void}){const [result,setResult]=useState<Dict|null>(null),[error,setError]=useState(""),[running,setRunning]=useState(false);async function run(){setRunning(true);setBusy(true);setError("");setResult(null);try{setResult(await postApi({action:"benchmark",filters}))}catch(e){setError((e as Error).message)}finally{setRunning(false);setBusy(false)}}return <><div className="note-bar"><Gauge size={17}/><span>Compares identical rows using real MySQL <b>IGNORE INDEX</b> and <b>FORCE INDEX</b> plans on one selected location. It performs no schema changes; the index is not guaranteed to be faster.</span></div><div className="benchmark-controls"><div><b>Benchmark target</b><p>{filters.road?roads.find(r=>String(r.road_id)===filters.road)?.road_name||"Selected road":"First road in the active dataset"} · {boot.source?.min_date} to {boot.source?.max_date}</p></div><button className="btn primary" onClick={()=>void run()} disabled={running}>{running?<><LoaderCircle className="spin" size={15}/> Measuring plans…</>:<><Gauge size={15}/> Run database benchmark</>}</button></div>{error&&<ErrorCard message={error}/ >}{result&&<><div className="metric-grid compact"><Metric icon={Search} label="Without index median" value={`${fmt(result.without.median_ms,3)} ms`} hint={`${fmt(result.without.row_count)} rows · 3 warmed runs`}/><Metric icon={Gauge} label="With index median" value={`${fmt(result.withIndex.median_ms,3)} ms`} hint={`${fmt(result.withIndex.row_count)} rows · 3 warmed runs`} tone="teal"/><Metric icon={Activity} label="Result equality" value={result.equivalent?"Verified":"Mismatch"} hint={result.equivalent?"Row checksums match":"Investigate before presenting"} tone={result.equivalent?"teal":"red"}/></div><div className="chart-grid"><PlanPanel title="Without index" data={result.without}/><PlanPanel title="With sensor/date index" data={result.withIndex}/></div><div className="note-bar"><CircleHelp size={16}/><span>{result.measurement}</span></div></>}</>}
-function PlanPanel({title,data}:{title:string;data:Dict}){return <Panel title={title} sub={`Median ${fmt(data.median_ms,3)} ms · results ${data.checksum?.slice(0,16)}…`}><pre className="plan-tree">{typeof data.actual_plan==="string"?data.actual_plan:JSON.stringify(data.actual_plan,null,2)}</pre><details className="plan-details"><summary>EXPLAIN FORMAT=JSON</summary><pre className="plan-json">{JSON.stringify(data.plan,null,2)}</pre></details></Panel>}
-
-function Views(){const {data,error,refresh}=usePanel("views");const [busy,setBusy]=useState(false),[message,setMessage]=useState("");async function rebuild(){setBusy(true);setMessage("");try{const d=await postApi({action:"refresh"});refresh();setMessage(d.matches?"Summary rows refreshed; view and stored summary match.":"Summary refresh finished; review the comparison.")}catch(e){setMessage((e as Error).message)}finally{setBusy(false)}}return <><div className="note-bar"><Table2 size={17}/><span>MySQL has no native materialized views. This project uses <b>three ordinary views</b> plus a refreshable daily summary table maintained by a stored procedure.</span></div>{error&&<ErrorCard message={error} retry={refresh}/ >}{data&&<><div className="benchmark-controls"><div><b>Summary consistency check</b><p>Recomputes results from the ordinary view and compares them with the stored summary.</p><p className="muted-note">Scope: {data.scope}</p></div><button className="btn primary" onClick={()=>void rebuild()} disabled={busy}>{busy?<LoaderCircle size={15} className="spin"/>:<RefreshCw size={15}/>} Refresh summary</button></div><div className="summary-status"><span className={data.matches?"status-ok":"status-warn"}>{data.matches?"MATCH":"NOT REFRESHED / DIFFERENT"}</span><span>{data.implementation}</span><span>Last refresh: {data.refreshed_at||"Not yet refreshed"}</span></div><Panel title="Per-road aggregate comparison" sub="Weighted average speed preserves row weighting"><GridTable rows={data.ordinary||[]} columns={[["road_name","ROAD",r=><b>{r.road_name}</b>],["dates","DATES",r=>fmt(r.dates)],["recorded_volume","REPORTED VOLUME",r=>fmt(r.recorded_volume)],["average_speed","AVERAGE SPEED",r=>fmt(r.average_speed,2)]]}/></Panel><Panel title="Database view definitions"><div className="definition-list">{(data.definitions||[]).map((v:Dict)=><details key={v.name}><summary>{v.name}</summary><pre>{v.definition}</pre></details>)}</div></Panel></>}</>}
-
-function DataFlow({boot}:{boot:Dict}){const s=boot.source,q=s.quality_report||{};return <><div className="source-hero"><div className="source-mark"><Database size={24}/></div><div><div className="eyebrow">ACTIVE DATASET IMPORT</div><h2>Bangalore Traffic 2023–2024</h2><p>Historical Kaggle CSV imported into the configured local MySQL database.</p></div><a className="btn quiet" href={s.url} target="_blank" rel="noreferrer">View source <ChevronRight size={15}/></a></div><div className="metric-grid compact"><Metric icon={Table2} label="Imported source rows" value={fmt(s.input_rows)} hint={`${fmt(s.accepted_rows)} accepted · ${fmt(s.rejected_rows)} rejected`}/><Metric icon={Map} label="Areas represented" value={fmt(boot.areas?.length)} hint={(boot.areas||[]).slice(0,4).join(" · ")}/><Metric icon={Activity} label="Road locations" value={fmt(boot.roads?.length)} hint="Logical dataset locations" tone="teal"/><Metric icon={Gauge} label="Source date range" value={`${s.min_date||"—"} → ${s.max_date||"—"}`} hint={`Import #${s.import_id} · v${s.source_version}`} tone="purple"/></div><Panel title="Import and validation details" sub="Metadata captured during the transactional CSV import"><div className="provenance-grid">{[["Original file",s.source_file],["SHA-256",s.source_sha256],["Dataset rows",fmt(s.input_rows)],["Accepted rows",fmt(s.accepted_rows)],["Rejected rows",fmt(s.rejected_rows)],["Exact duplicate rows",fmt(q.duplicate_rows)],["Source columns",fmt(q.columns?.length)],["Observed time blocks",(q.time_blocks||[]).join(", ")],["Publisher license",q.provenance||"Not stated in dataset listing"],["Measurement units",s.units||"Not documented"]].map(([k,v])=><div key={String(k)}><span>{k}</span><b>{String(v??"—")}</b></div>)}</div></Panel><Panel title="Source field mapping" sub="All original CSV fields are preserved in each observation's JSON source_data column"><div className="field-tags">{(q.columns||[]).map((c:string)=><span key={c}>{c}</span>)}</div></Panel><Panel title="Known data limits"><div className="limits-list"><div><b>Historical sample</b><span>{s.note}</span></div><div><b>Categorical time</b><span>The CSV provides Morning, Daytime, Noon, Evening, Night, and Midnight labels, not exact timestamps. Hour-level filtering is not supported.</span></div><div><b>Location coverage</b><span>Area and road names exist; coordinates and road geometry do not. Application sensor codes are logical labels created from each source location.</span></div><div><b>Entity coverage</b><span>Individual vehicles and trips are not identifiable from these aggregate observations. Empty vehicle/trip tables are retained as future schema extensions.</span></div></div></Panel></>}
-
-function Reports({filters}:{filters:Filters}){const [type,setType]=useState("roads"),[result,setResult]=useState<Dict|null>(null),[error,setError]=useState(""),[busy,setBusy]=useState(false);useEffect(()=>{setResult(null);setError("")},[JSON.stringify(filters)]);async function preview(){setBusy(true);setError("");try{setResult(await getApi("report",filters,{type}))}catch(e){setError((e as Error).message)}finally{setBusy(false)}}return <><div className="report-toolbar"><label>Report<select value={type} onChange={e=>{setType(e.target.value);setResult(null)}}>{[["roads","Busiest roads"],["periods","Time blocks"],["congestion","Congestion breakdown"],["daily","Daily volume ranking"],["weather","Weather association"],["source-json","Original source fields"]].map(([k,v])=><option key={k} value={k}>{v}</option>)}</select></label><button className="btn primary" onClick={()=>void preview()} disabled={busy}>{busy?<LoaderCircle className="spin" size={15}/>:<Search size={15}/>} Preview report</button><a className={`btn quiet ${!result?"disabled-link":""}`} href={result?`/api/traffic?action=report&type=${type}${qpart(filters)}&format=csv`:undefined} aria-disabled={!result}> <Download size={15}/> Download CSV</a></div><p className="muted-note">CSV downloads include the currently applied filters. Export is formula-safe and contains up to the report row limit shown in the preview.</p>{error&&<ErrorCard message={error}/ >}{result&&<Panel title={result.title} sub={`${fmt(result.row_count)} preview rows · database driver round trip ${fmt(result.round_trip_ms,3)} ms`}><GridTable rows={result.rows||[]} columns={(result.columns||[]).map((c:string)=>[c,c.replaceAll("_"," ").toUpperCase(),(r:Dict)=>typeof r[c]==="number"?fmt(r[c],3):String(r[c]??"—")] as [string,string,(r:Dict)=>React.ReactNode])}/></Panel>}</>}
-function qpart(f:Filters){const s=qs(f);return s?`&${s}`:""}
-function ErrorCard({message,retry}:{message:string;retry?:()=>void}){return <div className="error-banner"><CircleHelp size={17}/><span>{message}</span>{retry&&<button onClick={retry}>Retry</button>}</div>}
-function pageTitle(id:string){return NAV.find(n=>n.id===id)?.label||"Overview"}
-function pageSubtitle(id:string){return ({dashboard:"A live view of imported traffic readings and road conditions.",simulation:"Watch fixed and adaptive signal control on the same synthetic traffic demand.",traffic:"Compare road, time block, weather, and congestion patterns.",spatio:"Explore source locations by area without implying geographic precision.",explorer:"Inspect the configured MySQL tables, columns, keys, and live row counts.",sqllab:"Run curated advanced SQL against the active dataset import.",optimization:"Compare real MySQL index plans using equivalent filtered results.",views:"Review ordinary views and verify the refreshed daily summary table.",dataflow:"Understand the dataset import, validation, provenance, and limits.",reports:"Preview filtered SQL reports and export them as CSV."} as Record<string,string>)[id]||""}

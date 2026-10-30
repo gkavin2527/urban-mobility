@@ -16,7 +16,7 @@ export async function bootstrap(){
 }
 export async function analytics(filters={}){
   const source=await activeImport();const where=buildWhere(source.import_id,filters);const from=`FROM v_traffic_observation o ${where.sql}`;
-  const [kpis,roads,daily,timeBlocks,congestion,weather,observations]=await Promise.all([
+  const [kpis,roads,daily,timeBlocks,congestion,weather,observations,heatmap,trend]=await Promise.all([
     query(`SELECT COUNT(*) AS readings,COUNT(DISTINCT road_id) AS roads,COUNT(DISTINCT area) AS areas,COALESCE(SUM(vehicle_count),0) AS recorded_volume,ROUND(AVG(average_speed),2) AS average_speed,ROUND(100.0*SUM(congestion_level='High')/NULLIF(COUNT(*),0),2) AS high_percent ${from}`,where.params),
     query(`SELECT road_id,road_name,area,sensor_code,COUNT(*) AS readings,SUM(vehicle_count) AS recorded_volume,ROUND(AVG(average_speed),2) AS average_speed,ROUND(100.0*SUM(congestion_level='High')/COUNT(*),2) AS high_percent,ROUND(AVG(capacity_utilization),2) AS capacity_utilization ${from} GROUP BY road_id,road_name,area,sensor_code ORDER BY recorded_volume DESC,road_name LIMIT 100`,where.params),
     query(`SELECT observation_date AS date,SUM(vehicle_count) AS recorded_volume,ROUND(AVG(average_speed),2) AS average_speed,COUNT(*) AS readings ${from} GROUP BY observation_date ORDER BY observation_date LIMIT 1000`,where.params),
@@ -24,8 +24,16 @@ export async function analytics(filters={}){
     query(`SELECT congestion_level,COUNT(*) AS readings ${from} GROUP BY congestion_level ORDER BY FIELD(congestion_level,'Low','Medium','High')`,where.params),
     query(`SELECT weather,COUNT(*) AS readings,ROUND(AVG(average_speed),2) AS average_speed,ROUND(AVG(travel_time_index),3) AS travel_time_index ${from} GROUP BY weather ORDER BY readings DESC`,where.params),
     query(`SELECT source_row,road_name,area,observation_date,time_block,vehicle_count,average_speed,congestion_level,weather,roadwork ${from} ORDER BY observation_date DESC,road_name,source_row LIMIT 50`,where.params),
+    query(`SELECT road_id,road_name,time_block,COUNT(*) AS readings,ROUND(100.0*SUM(congestion_level='High')/COUNT(*),1) AS high_percent ${from} GROUP BY road_id,road_name,time_block ORDER BY road_name`,where.params),
+    // Earlier vs later half of the selected date range, per road: a descriptive speed trend, not a causal one.
+    query(`WITH f AS (SELECT road_id,road_name,observation_date,average_speed ${from}),
+      b AS (SELECT MIN(observation_date) AS d0,DATEDIFF(MAX(observation_date),MIN(observation_date)) AS span FROM f)
+      SELECT road_id,road_name,
+        ROUND(AVG(CASE WHEN observation_date<=DATE_ADD(b.d0,INTERVAL FLOOR(b.span/2) DAY) THEN average_speed END),2) AS early_speed,
+        ROUND(AVG(CASE WHEN observation_date>DATE_ADD(b.d0,INTERVAL FLOOR(b.span/2) DAY) THEN average_speed END),2) AS late_speed
+      FROM f CROSS JOIN b GROUP BY road_id,road_name HAVING early_speed IS NOT NULL AND late_speed IS NOT NULL ORDER BY road_name`,where.params),
   ]);
-  return {import_id:source.import_id,kpis:kpis[0],roads,daily,timeBlocks,congestion,weather,observations,filters,scope:'All results use the same source import and filters. Speed is an arithmetic mean of source readings; volume is not unique vehicles.'};
+  return {import_id:source.import_id,kpis:kpis[0],roads,daily,timeBlocks,congestion,weather,observations,heatmap,trend,filters,scope:'All results use the same source import and filters. Speed is an arithmetic mean of source readings; volume is not unique vehicles.'};
 }
 export async function runSavedQuery(id,filters={}){
   const source=await activeImport(),definition=savedQuery(id,source.import_id,filters),started=performance.now();
@@ -75,8 +83,15 @@ export async function benchmark(filters={}){
     return {...results,equivalent:results.without.checksum===results.withIndex.checksum,target,parameters:params,measurement:'Three warmed database-driver round trips per variant on one connection. Plans include server execution measurements. Index hints are non-destructive; an index is not guaranteed to be faster. The target is one source location, using selected dates and categorical conditions.'};
   }finally{db.release();}
 }
-export async function report(type,filters={}){
-  const id={roads:'busiest-roads',periods:'time-blocks',congestion:'congestion',daily:'daily-ranking',weather:'weather','source-json':'source-json'}[type];
-  if(!id)throw new Error('Unknown report type');
-  return {...await runSavedQuery(id,filters),report_type:type};
+// Operational columns the CSV carries beyond volume/speed/congestion. Percent columns are constrained to 0-100 in the schema.
+const OPS=`ROUND(AVG(capacity_utilization),1) AS capacity_utilization,ROUND(AVG(travel_time_index),2) AS travel_time_index,ROUND(AVG(signal_compliance),1) AS signal_compliance,ROUND(AVG(public_transport_usage),1) AS public_transport_usage,COALESCE(SUM(incident_reports),0) AS incidents`;
+export async function operations(filters={}){
+  const source=await activeImport();const where=buildWhere(source.import_id,filters);const from=`FROM v_traffic_observation o ${where.sql}`;
+  const [kpis,timeBlocks,roads,roadwork]=await Promise.all([
+    query(`SELECT COUNT(*) AS readings,${OPS},ROUND(AVG(parking_usage),1) AS parking_usage,ROUND(AVG(pedestrian_count),0) AS pedestrians,ROUND(AVG(environmental_impact),1) AS environmental_impact ${from}`,where.params),
+    query(`SELECT time_block,${OPS} ${from} GROUP BY time_block ORDER BY FIELD(time_block,'Midnight','Morning','Daytime','Noon','Evening','Night')`,where.params),
+    query(`SELECT road_name,area,${OPS} ${from} GROUP BY road_id,road_name,area ORDER BY incidents DESC,road_name LIMIT 10`,where.params),
+    query(`SELECT CASE roadwork WHEN 1 THEN 'Roadwork' WHEN 0 THEN 'No roadwork' ELSE 'Not stated' END AS roadwork_status,COUNT(*) AS readings,ROUND(AVG(average_speed),2) AS average_speed,${OPS} ${from} GROUP BY roadwork_status ORDER BY roadwork_status`,where.params),
+  ]);
+  return {import_id:source.import_id,kpis:kpis[0],timeBlocks,roads,roadwork,filters};
 }

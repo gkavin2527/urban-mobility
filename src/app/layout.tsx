@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import "./simulation.css";
+import "./explore.css";
 
 export const metadata: Metadata = {
   title: "ASQL | Urban Mobility Traffic Analytics",

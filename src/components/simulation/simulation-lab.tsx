@@ -43,7 +43,17 @@ export function SimulationLab({ initialGroup = "" }: { initialGroup?: string }) 
     catch (cause) { setError((cause as Error).message); }
   }, [group]);
 
-  useEffect(() => { void reloadOverview(); }, [reloadOverview]);
+  useEffect(() => {
+    let alive = true;
+    request("overview")
+      .then(value => {
+        if (!alive) return;
+        setOverview(value);
+        setGroup(old => old || value.recent?.[0]?.comparison_group || "");
+      })
+      .catch(cause => { if (alive) setError((cause as Error).message); });
+    return () => { alive = false; };
+  }, []);
   useEffect(() => {
     if (!group) return;
     let cancelled = false;
@@ -110,7 +120,7 @@ export function SimulationLab({ initialGroup = "" }: { initialGroup?: string }) 
 
   return <div className="sim-root">
     <div className="sim-disclosure"><CircleHelp size={17} />
-      <span>This is a <b>synthetic four-way junction</b>. The model generates vehicles from a fixed seed and records each run in separate MySQL tables. The historical Kaggle dashboard is unchanged.</span>
+      <span>A <b>synthetic four-way junction</b>: vehicles are generated from a seed, and both controllers get the same 180 simulated seconds of arrivals. The model is deterministic and uncalibrated, so results do not estimate real traffic. Runs are stored in their own MySQL tables, apart from the historical data.</span>
     </div>
 
     <div className="sim-controls">
@@ -124,11 +134,10 @@ export function SimulationLab({ initialGroup = "" }: { initialGroup?: string }) 
       {active && <button className="sim-secondary" onClick={() => void stop()} disabled={working}><Pause size={15} /> Stop runs</button>}
       <button className="sim-icon-button" onClick={() => { void reloadOverview(); void reloadPair(); }} aria-label="Refresh simulation data"><RefreshCw size={16} /></button>
     </div>
-    <p className="sim-helper">Both modes use the same scenario, seed, 180 simulated seconds, and generated arrival sequence. The two runs play one after the other.</p>
     {error && <div className="sim-error"><CircleHelp size={16} />{error}</div>}
 
-    {overview?.recent?.length > 0 && <div className="sim-history"><span>Recent comparisons</span>
-      {(overview.recent as Row[]).map(item => <button className={group === item.comparison_group ? "selected" : ""}
+    {(overview?.recent?.length ?? 0) > 0 && <div className="sim-history"><span>Recent comparisons</span>
+      {((overview?.recent ?? []) as Row[]).map(item => <button className={group === item.comparison_group ? "selected" : ""}
         key={item.comparison_group} onClick={() => { setGroup(item.comparison_group); setPair(null); }}>
         {String(item.scenario).replaceAll("_", " ")} · seed {item.demand_seed} · {group === item.comparison_group && pair ? runs.filter(run => run.status === "completed").length : item.completed_runs}/2 complete
       </button>)}
@@ -186,7 +195,6 @@ export function SimulationLab({ initialGroup = "" }: { initialGroup?: string }) 
             <p>{runs.every(run => terminal(run.status)) ? "Both runs must complete to produce a valid comparison." : "The comparison appears after both runs finish."}</p><small>Current status: fixed {fixed?.status}; adaptive {adaptive?.status}.</small></div>}
         </section>
       </div>
-      <div className="sim-disclosure compact"><CircleHelp size={16} /><span>Queue, waiting, and throughput describe this defined simulation. The model is deterministic and uncalibrated; these values do not estimate real traffic outcomes.</span></div>
     </>}
   </div>;
 }
