@@ -20,7 +20,7 @@ The Overview ends with a one-line strip summarising the latest completed pair. I
 - Each generated vehicle joins its approach queue. At most one vehicle per green approach crosses the stop line every two simulated seconds.
 - A phase change passes through three simulated seconds of yellow and one all-red second before the opposite green phase begins.
 - Fixed control changes after 20 seconds of green. Adaptive control keeps a green phase for at least 12 seconds, switches when the opposing queue has materially greater pressure, and caps green at 38 seconds.
-- Scenario demand is generated from an integer seed. The same generated arrivals feed both modes. Three presets are available: east–west surge, north–south surge, and balanced approaches.
+- Scenario demand is generated from an integer seed. The same generated arrivals feed both modes. Three fixed presets are available: east–west surge, north–south surge, and balanced approaches. When a dataset is imported, two more appear: **dataset peak** and **dataset off-peak** (see below).
 - Average experienced wait is the cumulative number of seconds spent in queues divided by total arrivals. It includes waiting experienced by vehicles still queued at the end. `total_served` counts vehicles that crossed the stop line.
 - Vehicle icons and road lines are a schematic visualization of queue and crossing state. They are not GPS positions or a real junction map.
 
@@ -36,6 +36,17 @@ For seed 42 and 180 simulated seconds, the pure model returns these reference va
 | North-south surge | Adaptive | 210 | 137 | 31.52 s | 74 |
 | Balanced | Fixed | 198 | 140 | 33.38 s | 63 |
 | Balanced | Adaptive | 198 | 133 | 36.14 s | 70 |
+
+## Dataset-derived scenarios
+
+The dataset's six time blocks differ a lot in volume. The server averages the reported volume per reading for each block in the active import and compares it with the mean across blocks. The busiest block gives the **peak** scenario and the quietest gives the **off-peak** scenario. Each one takes the *balanced* arrival rates and multiplies them by that ratio, clamped to 0.2–2.0.
+
+For the bundled file, Evening is about 1.68 times the mean and Midnight about 0.24 times, so the options read like `Dataset peak: Evening ×1.68` and `Dataset off-peak: Midnight ×0.24`.
+
+- The ratio is encoded in the scenario id (`peak_x168`, `offpeak_x24`), so a stored run can always be replayed and checked by `npm run verify:simulation` with no extra database column.
+- Only the **intensity** comes from the data. The dataset has no direction of travel, so the north/south/east/west mix stays balanced.
+- Arrivals are still generated from the seed. These scenarios are inspired by the data, not a replay of it, and are as synthetic as the others.
+- Without an imported dataset the option list falls back to the three fixed presets.
 
 ## Database tables and queries
 

@@ -152,6 +152,32 @@ These are ordinary views plus a physical summary table maintained by `CALL refre
 
 The website's Performance page (Index benchmark tab) runs the same filtered observation query with `IGNORE INDEX` and `FORCE INDEX (idx_obs_sensor_date)`, checks result checksums, and shows `EXPLAIN FORMAT=JSON` and `EXPLAIN ANALYZE`. Report the values observed on the presentation machine. Timings include database-driver round trips and are sensitive to caches and machine load; an index can be slower for some scopes.
 
+## Writing your own queries
+
+The SQL lab's **Write your own** tab accepts one `SELECT` or `WITH` query. Most analysis goes through the view and the active import, for example:
+
+```sql
+SELECT road_name, COUNT(*) AS readings, ROUND(AVG(average_speed), 1) AS avg_speed
+FROM v_traffic_observation
+WHERE import_id = (SELECT active_import_id FROM app_state WHERE singleton_id = 1)
+GROUP BY road_name
+ORDER BY readings DESC;
+```
+
+What is enforced, and where:
+
+| Rule | How |
+| --- | --- |
+| One statement, starting with SELECT or WITH | Text check in `src/lib/traffic/sql-guard.mjs` (a trailing `;` is fine) |
+| No comments, `INTO`, locking reads, or functions like `SLEEP` and `LOAD_FILE` | Same text check; string contents such as `LIKE '%;%'` are not mistaken for code |
+| Project database only | Queries naming `mysql`, `information_schema`, `performance_schema` or `sys` are refused |
+| No writes | The query runs inside a `READ ONLY` transaction, so even a write that slipped past the text check fails in MySQL |
+| 5 second limit, 500 rows | `MAX_EXECUTION_TIME` on a throwaway connection, and the result is wrapped with a row limit |
+
+The row limit wraps your query as a derived table, so every output column needs a distinct name; alias duplicates (`o.road_id AS obs_road`). The global filter bar does not apply to this tab.
+
+This is a convenience for a local, single-user tool, not a hardened multi-user sandbox: the query runs with the MySQL account from `.env`. For anything shared, point that account at a user with `SELECT`-only privileges on `urban_mobility`.
+
 ## MySQL and course dialect note
 
 The source project handout includes Oracle-oriented topics. This implementation targets the user's installed MySQL 8 workflow. SQL syntax and features differ across DBMS products. The project demonstrates MySQL-compatible relational design, checks, views, stored procedure, JSON, CTEs, window functions, and index plans; it does not claim Oracle compatibility or a native MySQL materialized view.

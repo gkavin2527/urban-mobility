@@ -24,9 +24,9 @@ A second, clearly separate part simulates a four-way junction under **fixed** an
 | --- | --- |
 | **Overview** | Headline numbers, insight cards (busiest and most congested road, peak time block, biggest speed gain and drop), volume and congestion charts. |
 | **Explore** | Four tabs: time and weather patterns; a road × time-block congestion heatmap with area groupings; **operations** (capacity, travel-time index, signal compliance, incidents, public transport, parking, pedestrians, roadwork effect); and the latest rows. |
-| **Live simulation** | Seeded fixed-vs-adaptive runs with queue chart, action timeline, run history and a persisted comparison. |
+| **Live simulation** | Seeded fixed-vs-adaptive runs with queue chart, action timeline, run history and a persisted comparison. Includes **dataset peak / off-peak** scenarios scaled from the imported time-block volumes. |
 | **Schema** | Live table, column and key metadata with row counts. |
-| **SQL lab** | Eleven curated, parameterised exercises (joins, CTEs, window functions, subqueries, JSON, UNION) with the SQL, bound parameters, timing and CSV download. |
+| **SQL lab** | Eleven curated, parameterised exercises (joins, CTEs, window functions, subqueries, JSON, UNION) with the SQL, bound parameters, timing and CSV download, plus a **read-only editor** for your own SELECT/WITH queries. |
 | **Performance** | `EXPLAIN` comparison with and without an index; three views and a refreshable daily summary table. |
 | **Data & provenance** | Import checksum, validation counts and what the data can and cannot tell you. |
 
@@ -87,7 +87,9 @@ sequenceDiagram
     UI->>UI: show persisted comparison
 ```
 
-Reference results for seed 42 over 180 simulated seconds:
+Besides these three presets, **dataset peak** and **dataset off-peak** scale the balanced mix by how busy the dataset's busiest and quietest time blocks are (for the bundled file, Evening about ×1.68 and Midnight about ×0.24). Only the intensity comes from the data; the arrivals remain generated.
+
+Reference results for the three presets, seed 42 over 180 simulated seconds:
 
 | Scenario | Mode | Arrivals | Served | Avg. wait | Largest queue |
 | --- | --- | ---: | ---: | ---: | ---: |
@@ -162,4 +164,4 @@ What it does and does not contain:
 
 ## Status
 
-Source complete. The 21 pure Node tests, the TypeScript check, lint (all of `src`) and the production build pass without MySQL. The new Explore and Operations SQL, and everything that needs a live database or a browser, is tracked in the [acceptance checklist](docs/SETUP_AND_ACCEPTANCE.md) and has not been run yet.
+Source complete. The 28 pure Node tests, the TypeScript check, lint (all of `src`) and the production build pass without MySQL. The new Explore, Operations and SQL-editor queries, and everything that needs a live database or a browser, is tracked in the [acceptance checklist](docs/SETUP_AND_ACCEPTANCE.md) and has not been run yet.
