@@ -1,24 +1,8 @@
 import { createHash } from 'node:crypto';
 
-export const APPROACHES = ['N', 'S', 'E', 'W'];
-export const SCENARIOS = {
-  east_west_surge: {
-    title: 'East–west surge',
-    description: 'A busy cross street meets a quieter north–south approach.',
-    rates: { N: 0.09, S: 0.10, E: 0.51, W: 0.47 },
-  },
-  north_south_surge: {
-    title: 'North–south surge',
-    description: 'The primary north–south street carries most arrivals.',
-    rates: { N: 0.49, S: 0.52, E: 0.10, W: 0.09 },
-  },
-  balanced: {
-    title: 'Balanced approaches',
-    description: 'All four approaches receive similar traffic demand.',
-    rates: { N: 0.29, S: 0.27, E: 0.28, W: 0.29 },
-  },
-};
+import { APPROACHES, resolveScenario, SCENARIOS } from './scenarios.mjs';
 
+export { APPROACHES, SCENARIOS };
 export const DEFAULT_DURATION = 180;
 export const SAMPLE_SECONDS = 5;
 export const WALL_MS_PER_SAMPLE = 400;
@@ -28,7 +12,7 @@ export function validateSettings(input = {}) {
   const mode = input.mode ?? 'fixed';
   const seed = Number(input.seed ?? 42);
   const duration = Number(input.duration ?? DEFAULT_DURATION);
-  if (!Object.hasOwn(SCENARIOS, scenario)) throw new Error('Invalid simulation scenario');
+  if (!resolveScenario(scenario)) throw new Error('Invalid simulation scenario');
   if (!['fixed', 'adaptive'].includes(mode)) throw new Error('Invalid simulation mode');
   if (!Number.isInteger(seed) || seed < 0 || seed > 4294967295) throw new Error('Invalid simulation seed');
   if (!Number.isInteger(duration) || duration < 60 || duration > 360 || duration % SAMPLE_SECONDS !== 0) {
@@ -48,7 +32,7 @@ function randomGenerator(seed) {
 export function createDemandPlan(scenario, seed, duration = DEFAULT_DURATION) {
   validateSettings({ scenario, seed, duration });
   const random = randomGenerator(seed);
-  const rates = SCENARIOS[scenario].rates;
+  const rates = resolveScenario(scenario).rates;
   const plan = [];
   for (let second = 1; second <= duration; second++) {
     const wave = second >= duration / 4 && second < duration * 3 / 4 ? 1.25 : 0.85;

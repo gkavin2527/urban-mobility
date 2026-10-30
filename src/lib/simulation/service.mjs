@@ -3,8 +3,9 @@ import { closeSync, mkdirSync, openSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { getPool, query } from '../traffic/database.mjs';
-import { createDemandPlan, DEFAULT_DURATION, demandFingerprint, SCENARIOS, validateSettings } from './engine.mjs';
+import { createDemandPlan, DEFAULT_DURATION, demandFingerprint, validateSettings } from './engine.mjs';
 import { compareRuns } from './metrics.mjs';
+import { derivedScenarios, SCENARIOS } from './scenarios.mjs';
 
 const groupPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -81,6 +82,18 @@ export async function startComparison(input = {}) {
   return { comparison_group: group, fixed_run_id: ids[0], adaptive_run_id: ids[1], settings, demand_fingerprint: fingerprint };
 }
 
+// Peak and off-peak scenarios scaled from the active import's time-block volumes.
+// Without an imported dataset the three built-in scenarios still work, so a failure here is not fatal.
+async function datasetScenarios() {
+  try {
+    const blocks = await query(`SELECT time_block,AVG(vehicle_count) AS avg_volume FROM traffic_observation
+      WHERE import_id=(SELECT active_import_id FROM app_state WHERE singleton_id=1) GROUP BY time_block`);
+    return derivedScenarios(blocks);
+  } catch {
+    return [];
+  }
+}
+
 export async function simulationOverview() {
   const recent = await query(`SELECT comparison_group,MAX(run_id) AS latest_run,
     MAX(scenario) AS scenario,MAX(demand_seed) AS demand_seed,
@@ -109,7 +122,10 @@ export async function simulationOverview() {
   return {
     recent,
     latest_comparison,
-    scenarios: Object.entries(SCENARIOS).map(([id, value]) => ({ id, title: value.title, description: value.description })),
+    scenarios: [
+      ...Object.entries(SCENARIOS).map(([id, value]) => ({ id, title: value.title, description: value.description })),
+      ...await datasetScenarios(),
+    ],
     defaults: { seed: 42, duration: DEFAULT_DURATION },
     model: 'Deterministic four-approach queue simulation. Each run is a synthetic scenario, not live city traffic or a calibrated SUMO model.',
   };

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Activity, CircleHelp, GitCompareArrows, LoaderCircle, Pause, Play, RefreshCw, TrafficCone } from "lucide-react";
 import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { scenarioLabel } from "@/lib/simulation/scenarios.mjs";
 
 type Row = Record<string, any>;
 const format = (value: any, digits = 0) => Number(value || 0).toLocaleString(undefined, { maximumFractionDigits: digits });
@@ -97,6 +98,7 @@ export function SimulationLab({ initialGroup = "" }: { initialGroup?: string }) 
     finally { setWorking(false); }
   }
 
+  const scenarioNote = (overview?.scenarios ?? []).find((item: Row) => item.id === scenario)?.description;
   const runs: Row[] = pair?.runs || [];
   const fixed = runs.find(run => run.control_mode === "fixed");
   const adaptive = runs.find(run => run.control_mode === "adaptive");
@@ -134,12 +136,13 @@ export function SimulationLab({ initialGroup = "" }: { initialGroup?: string }) 
       {active && <button className="sim-secondary" onClick={() => void stop()} disabled={working}><Pause size={15} /> Stop runs</button>}
       <button className="sim-icon-button" onClick={() => { void reloadOverview(); void reloadPair(); }} aria-label="Refresh simulation data"><RefreshCw size={16} /></button>
     </div>
+    {scenarioNote && <p className="sim-helper">{scenarioNote}</p>}
     {error && <div className="sim-error"><CircleHelp size={16} />{error}</div>}
 
     {(overview?.recent?.length ?? 0) > 0 && <div className="sim-history"><span>Recent comparisons</span>
       {((overview?.recent ?? []) as Row[]).map(item => <button className={group === item.comparison_group ? "selected" : ""}
         key={item.comparison_group} onClick={() => { setGroup(item.comparison_group); setPair(null); }}>
-        {String(item.scenario).replaceAll("_", " ")} · seed {item.demand_seed} · {group === item.comparison_group && pair ? runs.filter(run => run.status === "completed").length : item.completed_runs}/2 complete
+        {scenarioLabel(item.scenario)} · seed {item.demand_seed} · {group === item.comparison_group && pair ? runs.filter(run => run.status === "completed").length : item.completed_runs}/2 complete
       </button>)}
     </div>}
 

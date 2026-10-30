@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { parseFilters, toCsv } from '@/lib/traffic/core.mjs';
 import { publicError } from '@/lib/traffic/database.mjs';
-import { analytics, benchmark, bootstrap, operations, refreshSummary, runSavedQuery, schema, summaries } from '@/lib/traffic/service.mjs';
+import { analytics, benchmark, bootstrap, customSql, operations, refreshSummary, runSavedQuery, schema, summaries } from '@/lib/traffic/service.mjs';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
@@ -35,6 +35,7 @@ export async function POST(request: NextRequest) {
     let body;try{body=JSON.parse(text);}catch{return NextResponse.json({error:'Invalid JSON body'},{status:400});}
     const filters=parseFilters(body.filters||{});let data;
     if(body.action==='query')data=await runSavedQuery(body.id,filters);
+    else if(body.action==='sql')data=await customSql(body.sql);
     else if(body.action==='benchmark')data=await benchmark(filters);
     else if(body.action==='refresh')data=await refreshSummary();
     else return NextResponse.json({error:'Unknown action'},{status:400});

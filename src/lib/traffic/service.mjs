@@ -2,6 +2,7 @@ import {createHash} from 'node:crypto';
 import {activeImport,getPool,query} from './database.mjs';
 import {buildWhere,TIME_BLOCKS,SOURCE_URL} from './core.mjs';
 import {QUERY_LIBRARY,savedQuery} from './queries.mjs';
+import {checkReadOnlySql,MAX_CUSTOM_MS,MAX_CUSTOM_ROWS} from './sql-guard.mjs';
 
 const sourceNote='Historical Kaggle dataset; publisher provenance and measurement units are not documented. Time blocks are categories, and location IDs are derived. No physical sensor, vehicle or trip identities are supplied.';
 export async function bootstrap(){
@@ -39,6 +40,26 @@ export async function runSavedQuery(id,filters={}){
   const source=await activeImport(),definition=savedQuery(id,source.import_id,filters),started=performance.now();
   const rows=await query(definition.sql,definition.params);const elapsed=performance.now()-started;
   return {id,title:definition.title,sql:definition.sql,parameters:definition.params,why:definition.why,features:definition.features,columns:Object.keys(rows[0]||{}),rows,row_count:rows.length,round_trip_ms:Number(elapsed.toFixed(3)),measurement:'Database driver round-trip including row retrieval; not server CPU time.',import_id:source.import_id};
+}
+/**
+ * Runs a user-written SELECT/WITH. Defence in depth: the text guard, a READ ONLY transaction, a statement
+ * time limit, a row cap, and a throwaway connection (its session settings never reach the shared pool).
+ */
+export async function customSql(text){
+  const sql=checkReadOnlySql(text);
+  const db=await getPool().getConnection();
+  const started=performance.now();
+  try{
+    await db.query("SET SESSION sql_mode=REPLACE(REPLACE(@@sql_mode,'NO_BACKSLASH_ESCAPES',''),'ANSI_QUOTES','')");
+    await db.query(`SET SESSION MAX_EXECUTION_TIME=${MAX_CUSTOM_MS}`);
+    await db.query('START TRANSACTION READ ONLY');
+    const [rows,fields]=await db.query(`SELECT * FROM (${sql}) AS q LIMIT ${MAX_CUSTOM_ROWS+1}`);
+    const elapsed=performance.now()-started;
+    return {sql,columns:fields.map(f=>f.name),rows:rows.slice(0,MAX_CUSTOM_ROWS),row_count:Math.min(rows.length,MAX_CUSTOM_ROWS),truncated:rows.length>MAX_CUSTOM_ROWS,limit:MAX_CUSTOM_ROWS,round_trip_ms:Number(elapsed.toFixed(3))};
+  }catch(error){
+    if(error.sqlMessage)throw new Error(`Invalid SQL: ${error.sqlMessage}`);
+    throw error;
+  }finally{db.destroy();}
 }
 const TABLES=['dataset_import','area','road','road_segment','sensor','traffic_observation','vehicle','trip','app_state','road_daily_summary','simulation_run','simulation_step','simulation_lane_sample','simulation_action'];
 export async function schema(){

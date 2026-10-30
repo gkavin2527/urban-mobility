@@ -27,3 +27,8 @@
 .sim-strip button { display: inline-flex; align-items: center; gap: 5px; flex: none; border: 1px solid #c9dced; border-radius: 6px; background: #fff; color: #2c6fae; padding: 6px 10px; font-size: 10px; font-weight: 650; cursor: pointer; }
 .sim-strip button:hover { background: #e9f4fc; }
 @media (max-width: 620px) { .sim-strip { flex-wrap: wrap; } .sim-strip button { margin-left: 26px; } }
+
+.editor { margin: 0 0 14px; }
+.editor textarea { width: 100%; padding: 12px 14px; border: 1px solid #dfe6ee; border-radius: 8px; background: #fbfcfe; color: #17365d; font: 12px/1.55 var(--font-geist-mono); resize: vertical; tab-size: 2; }
+.editor textarea:focus { outline: 2px solid #4472c455; border-color: #4472c4; }
+.editor-actions { display: flex; align-items: center; gap: 10px; margin-top: 8px; color: #8b9aab; font-size: 10px; }

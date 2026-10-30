@@ -37,7 +37,11 @@ export function GridTable({ rows, columns }: { rows: Dict[]; columns: Column[] }
 
 /** Table columns for an arbitrary result set (used by the SQL lab). */
 export function autoColumns(columns: string[], digits = 2): Column[] {
-  return columns.map(c => [c, c.replaceAll("_", " ").toUpperCase(), (r: Dict) => (typeof r[c] === "number" ? r[c].toLocaleString(undefined, { maximumFractionDigits: digits }) : String(r[c] ?? "—"))]);
+  const cell = (value: any) =>
+    typeof value === "number" ? value.toLocaleString(undefined, { maximumFractionDigits: digits })
+    : value !== null && typeof value === "object" ? JSON.stringify(value)
+    : String(value ?? "—");
+  return columns.map(c => [c, c.replaceAll("_", " ").toUpperCase(), (r: Dict) => cell(r[c])]);
 }
 
 export function Metric({ label, value, hint, icon: Icon, tone = "blue" }: { label: string; value: string; hint: string; icon: LucideIcon; tone?: string }) {

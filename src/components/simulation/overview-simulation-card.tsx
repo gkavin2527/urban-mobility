@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ArrowRight, GitCompareArrows } from "lucide-react";
+import { scenarioLabel } from "@/lib/simulation/scenarios.mjs";
 
 type Latest = {
   comparison_group: string;
@@ -42,7 +43,7 @@ export function OverviewSimulationCard({ openSimulation }: { openSimulation: (gr
   const text = !state ? "Checking saved comparisons…"
     : state.error ? `Simulation summary unavailable: ${state.error}`
     : !latest ? "No completed comparison yet. Run both controllers to record one."
-    : `${latest.scenario.replaceAll("_", " ")}: ${summary(latest)}`;
+    : `${scenarioLabel(latest.scenario)}: ${summary(latest)}`;
 
   return (
     <section className="sim-strip" aria-label="Latest synthetic simulation comparison">

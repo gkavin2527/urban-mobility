@@ -20,7 +20,7 @@ const NAV: NavItem[] = [
   { id: "explore", label: "Explore", icon: BarChart3, group: "ANALYZE", filters: true, subtitle: "Time, weather, roads, areas and operational measures in one place." },
   { id: "simulation", label: "Live simulation", icon: TrafficCone, group: "ANALYZE", subtitle: "Fixed and adaptive signal control on the same synthetic traffic demand." },
   { id: "schema", label: "Schema", icon: Database, group: "DATABASE", subtitle: "Tables, columns, keys and live row counts in the configured MySQL database." },
-  { id: "sqllab", label: "SQL lab", icon: Search, group: "DATABASE", filters: true, subtitle: "Curated advanced SQL against the active import, with CSV export." },
+  { id: "sqllab", label: "SQL lab", icon: Search, group: "DATABASE", subtitle: "Curated advanced SQL with CSV export, or write your own read-only query." },
   { id: "performance", label: "Performance", icon: Gauge, group: "DATABASE", subtitle: "Real MySQL index plans, plus the views and refreshable summary table." },
   { id: "provenance", label: "Data & provenance", icon: Cable, group: "PROJECT", subtitle: "Where the data came from, how it was validated, and what it cannot tell you." },
 ];
@@ -113,7 +113,7 @@ export function TrafficApp() {
           {page === "explore" && analytics.data && <Explore data={analytics.data} boot={b} filters={applied} />}
           {page === "simulation" && <SimulationLab initialGroup={simulationGroup} />}
           {page === "schema" && <Schema />}
-          {page === "sqllab" && <SqlLab key={filterKey} filters={applied} queries={b.queries || []} />}
+          {page === "sqllab" && <SqlLab key={filterKey} filters={applied} queries={b.queries || []} filterBar={filterBar} />}
           {page === "performance" && <Performance boot={b} filters={applied} roads={roads} filterBar={filterBar} setBusy={setBusy} />}
           {page === "provenance" && <Provenance boot={b} />}
         </div></main>
