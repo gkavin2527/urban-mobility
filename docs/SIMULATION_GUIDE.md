@@ -12,7 +12,7 @@ The Simulation page runs a deterministic four-approach junction model on the loc
 
 The POST endpoint has a one-pair-at-a-time limit. The Stop button requests cancellation through MySQL, and the worker checks that flag after each sample. Worker progress/errors are written to the ignored `data/processed/simulation-worker.log` file.
 
-Overview shows the latest completed pair in a separate card. Its link opens that exact comparison on the Live Simulation page. Historical Kaggle cards and filters remain sourced only from the imported CSV.
+The Overview ends with a one-line strip summarising the latest completed pair. Its link opens that exact comparison on the Live simulation page. Historical Kaggle cards and filters remain sourced only from the imported CSV.
 
 ## Junction model
 
@@ -76,6 +76,6 @@ ORDER BY r.control_mode, a.sim_second;
 
 ## Setup and verification
 
-After configuring MySQL and running `npm install`, rerun `npm run db:setup` to create the simulation tables. Run `npm test` for the deterministic model and transaction checks, then `npm run typecheck`, `npm run lint`, and `npm run build`. Start `npm run dev`, open the Simulation page, and run all three scenarios with seed 42. After at least one pair finishes, run `npm run verify:simulation`. This read-only command checks demand identity, final totals, every expected five-second sample, four lane samples per step, action records, and agreement with the pure model. Compare its report with the UI and Workbench. Verify Stop, page reload/history, the Overview card, and database failure messaging.
+After configuring MySQL and running `npm install`, rerun `npm run db:setup` to create the simulation tables. Run `npm test` for the deterministic model and transaction checks, then `npm run typecheck`, `npm run lint`, and `npm run build`. Start `npm run dev`, open the Simulation page, and run all three scenarios with seed 42. After at least one pair finishes, run `npm run verify:simulation`. This read-only command checks demand identity, final totals, every expected five-second sample, four lane samples per step, action records, and agreement with the pure model. Compare its report with the UI and Workbench. Verify Stop, page reload/history, the Overview strip, and database failure messaging.
 
 The included code has been checked with pure Node tests, but a local MySQL service and installed npm dependencies are needed for full browser/database proof. Record those results in the acceptance log described in [SETUP_AND_ACCEPTANCE.md](SETUP_AND_ACCEPTANCE.md) after they are observed.

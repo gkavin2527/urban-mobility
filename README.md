@@ -22,11 +22,13 @@ A second, clearly separate part simulates a four-way junction under **fixed** an
 
 | Area | What it does |
 | --- | --- |
-| **Overview, Traffic Analysis, Road Patterns** | SQL-backed summaries and filters over the imported data. Road Patterns is schematic because the source has no coordinates. |
-| **Schema Explorer, SQL Query Lab** | Live schema metadata and eleven curated, parameterised exercises: joins, CTEs, window functions, subqueries, JSON. |
-| **Index Benchmark, Views & Summaries** | `EXPLAIN` comparison with and without an index; three views and a refreshable daily summary table. |
-| **Data & Provenance, Reports** | Import checksum, validation counts, source limitations, and filtered CSV export. |
-| **Live Simulation** | Seeded fixed-vs-adaptive runs with queue chart, action timeline, run history and a persisted comparison. |
+| **Overview** | Headline numbers, insight cards (busiest and most congested road, peak time block, biggest speed gain and drop), volume and congestion charts. |
+| **Explore** | Four tabs: time and weather patterns; a road × time-block congestion heatmap with area groupings; **operations** (capacity, travel-time index, signal compliance, incidents, public transport, parking, pedestrians, roadwork effect); and the latest rows. |
+| **Live simulation** | Seeded fixed-vs-adaptive runs with queue chart, action timeline, run history and a persisted comparison. |
+| **Schema** | Live table, column and key metadata with row counts. |
+| **SQL lab** | Eleven curated, parameterised exercises (joins, CTEs, window functions, subqueries, JSON, UNION) with the SQL, bound parameters, timing and CSV download. |
+| **Performance** | `EXPLAIN` comparison with and without an index; three views and a refreshable daily summary table. |
+| **Data & provenance** | Import checksum, validation counts and what the data can and cannot tell you. |
 
 ## How it works
 
@@ -134,7 +136,7 @@ The configuration script asks for the MySQL host, port, user and password and sa
 ├── sql/                   Schema, views, summary procedure, simulation tables
 ├── src/
 │   ├── app/               Next.js entry point, API routes, styles
-│   ├── components/        Dashboard (traffic/), simulation UI (simulation/), shared
+│   ├── components/        Dashboard (traffic/, one file per page), simulation UI, shared
 │   └── lib/               Parser, queries and services (traffic/, simulation/)
 ├── tests/                 Pure Node tests
 ├── data/raw/              Source CSV goes here (not in Git)
@@ -160,4 +162,4 @@ What it does and does not contain:
 
 ## Status
 
-Source complete. The pure Node tests run without MySQL; the checks that need a live database, a production build and a browser are tracked in the [acceptance checklist](docs/SETUP_AND_ACCEPTANCE.md) and are not yet recorded.
+Source complete. The 21 pure Node tests, the TypeScript check, lint (all of `src`) and the production build pass without MySQL. The new Explore and Operations SQL, and everything that needs a live database or a browser, is tracked in the [acceptance checklist](docs/SETUP_AND_ACCEPTANCE.md) and has not been run yet.

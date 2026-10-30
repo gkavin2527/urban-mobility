@@ -146,11 +146,11 @@ WHERE import_id = (
 );
 ```
 
-These are ordinary views plus a physical summary table maintained by `CALL refresh_traffic_summary()`. MySQL does not call this a native materialized view. The website's Views screen compares the ordinary view and stored table using row-count-weighted average speed.
+These are ordinary views plus a physical summary table maintained by `CALL refresh_traffic_summary()`. MySQL does not call this a native materialized view. The website's Performance page (Views & summaries tab) compares the ordinary view and stored table using row-count-weighted average speed.
 
 ## Query plan comparison
 
-The website's Index Benchmark runs the same filtered observation query with `IGNORE INDEX` and `FORCE INDEX (idx_obs_sensor_date)`, checks result checksums, and shows `EXPLAIN FORMAT=JSON` and `EXPLAIN ANALYZE`. Report the values observed on the presentation machine. Timings include database-driver round trips and are sensitive to caches and machine load; an index can be slower for some scopes.
+The website's Performance page (Index benchmark tab) runs the same filtered observation query with `IGNORE INDEX` and `FORCE INDEX (idx_obs_sensor_date)`, checks result checksums, and shows `EXPLAIN FORMAT=JSON` and `EXPLAIN ANALYZE`. Report the values observed on the presentation machine. Timings include database-driver round trips and are sensitive to caches and machine load; an index can be slower for some scopes.
 
 ## MySQL and course dialect note
 
