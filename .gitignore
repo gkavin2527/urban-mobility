@@ -1,0 +1,70 @@
+# --- Dependencies ---
+node_modules/
+.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# --- Build output ---
+/.next/
+/out/
+/build/
+/coverage/
+*.tsbuildinfo
+next-env.d.ts
+
+# --- Environment and secrets ---
+.env*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+.aws/
+
+# --- Data (supplied separately; see README) ---
+/data/raw/*
+!/data/raw/.gitkeep
+/data/processed/
+/data/cache/
+
+# --- Local-only material (course files, papers, old SQL, slides) ---
+/reference/
+/artifacts/
+/tmp/
+*.zip
+
+# --- Local databases ---
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# --- Logs and process files ---
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+*.pid
+
+# --- Tooling, editors and OS ---
+.vercel/
+.venv/
+.idea/
+.vscode/
+.claude/
+.claude-flow/
+.swarm/
+.codegraph/
+.codex/
+.agents/
+AGENTS.md
+.DS_Store
+Thumbs.db
+desktop.ini

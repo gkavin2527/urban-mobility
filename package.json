@@ -1,0 +1,40 @@
+{
+  "name": "asql-urban-mobility",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --hostname 127.0.0.1 -p 3000",
+    "build": "next build --webpack",
+    "start": "next start --hostname 127.0.0.1 -p 3000",
+    "lint": "eslint src/app/layout.tsx src/app/page.tsx src/app/api/health/route.ts src/app/api/traffic/route.ts src/app/api/simulation/route.ts src/components/traffic/traffic-app.tsx src/components/simulation/simulation-lab.tsx src/components/simulation/overview-simulation-card.tsx src/components/shared/sql-block.tsx src/lib/utils.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test --test-isolation=none tests/traffic-core.test.mjs tests/traffic-queries.test.mjs tests/simulation-engine.test.mjs tests/simulation-metrics.test.mjs tests/simulation-persistence.test.mjs",
+    "db:setup": "node --env-file=.env scripts/db-setup.mjs",
+    "data:import": "node --env-file=.env scripts/import-dataset.mjs",
+    "data:download": "python scripts/download-dataset.py",
+    "verify:database": "node --env-file=.env scripts/verify-database.mjs",
+    "verify:simulation": "node --env-file=.env scripts/verify-simulation.mjs"
+  },
+  "dependencies": {
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.525.0",
+    "mysql2": "^3.15.3",
+    "next": "^16.1.1",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "recharts": "^2.15.4",
+    "tailwind-merge": "^3.3.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.0.0",
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "eslint": "^9.0.0",
+    "eslint-config-next": "^16.1.1",
+    "tailwindcss": "^4.0.0",
+    "tailwindcss-animate": "^1.0.7",
+    "tw-animate-css": "^1.3.5",
+    "typescript": "^5.0.0"
+  }
+}
