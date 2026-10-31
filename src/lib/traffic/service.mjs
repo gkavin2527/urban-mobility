@@ -34,7 +34,7 @@ export async function analytics(filters={}){
         ROUND(AVG(CASE WHEN observation_date>DATE_ADD(b.d0,INTERVAL FLOOR(b.span/2) DAY) THEN average_speed END),2) AS late_speed
       FROM f CROSS JOIN b GROUP BY road_id,road_name HAVING early_speed IS NOT NULL AND late_speed IS NOT NULL ORDER BY road_name`,where.params),
   ]);
-  return {import_id:source.import_id,kpis:kpis[0],roads,daily,timeBlocks,congestion,weather,observations,heatmap,trend,filters,scope:'All results use the same source import and filters. Speed is an arithmetic mean of source readings; volume is not unique vehicles.'};
+  return {import_id:source.import_id,kpis:kpis[0],roads,daily,timeBlocks,congestion:congestion.map(r=>({...r,readings:Number(r.readings)})),weather,observations,heatmap,trend,filters,scope:'All results use the same source import and filters. Speed is an arithmetic mean of source readings; volume is not unique vehicles.'};
 }
 export async function runSavedQuery(id,filters={}){
   const source=await activeImport(),definition=savedQuery(id,source.import_id,filters),started=performance.now();

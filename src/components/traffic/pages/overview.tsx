@@ -6,10 +6,26 @@ import { fmt, pct, type Dict } from "../api";
 import { ChartFrame, Empty, GridTable, Metric, Panel } from "../ui";
 
 const CONGESTION_COLORS = ["#39a681", "#e0a43a", "#db625e"];
+const CONGESTION_COLOR_MAP: Record<string, string> = {
+  Low: "#39a681",
+  Medium: "#e0a43a",
+  High: "#db625e",
+};
+
+function formatVolumeAxis(v: number) {
+  if (v >= 1_000_000) return `${Number((v / 1_000_000).toFixed(v % 1_000_000 === 0 ? 0 : 1))}M`;
+  if (v >= 1_000) return `${Number((v / 1_000).toFixed(0))}k`;
+  return String(v);
+}
 
 export function Overview({ data, openSimulation }: { data: Dict; openSimulation: (group?: string) => void }) {
   const k = data.kpis || {};
   const insights = deriveInsights(data);
+  const congestion = (data.congestion || []).map((r: any, i: number) => ({
+    ...r,
+    readings: Number(r.readings) || 0,
+    fill: CONGESTION_COLOR_MAP[r.congestion_level] || CONGESTION_COLORS[i % 3],
+  }));
   return (
     <>
       <div className="metric-grid">
@@ -58,10 +74,10 @@ export function Overview({ data, openSimulation }: { data: Dict; openSimulation:
           <ChartFrame>
             {data.timeBlocks?.length ? (
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={data.timeBlocks}>
+                <BarChart data={data.timeBlocks} margin={{ top: 10, right: 10, left: 8, bottom: 0 }}>
                   <CartesianGrid stroke="#edf1f6" vertical={false} />
                   <XAxis dataKey="time_block" tick={{ fontSize: 11 }} />
-                  <YAxis width={44} />
+                  <YAxis tickFormatter={formatVolumeAxis} width={52} tick={{ fontSize: 11 }} />
                   <Tooltip formatter={(v: any) => fmt(v)} />
                   <Bar dataKey="recorded_volume" name="Reported volume" fill="#4786cf" radius={[5, 5, 0, 0]} maxBarSize={44} />
                 </BarChart>
@@ -87,11 +103,13 @@ export function Overview({ data, openSimulation }: { data: Dict; openSimulation:
         <Panel title="Congestion mix" sub="Share of matching readings">
           <div className="pie-wrap">
             <ChartFrame>
-              {data.congestion?.length ? (
+              {congestion.length ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
-                    <Pie data={data.congestion} dataKey="readings" nameKey="congestion_level" innerRadius={53} outerRadius={79} paddingAngle={3}>
-                      {data.congestion.map((_: any, i: number) => <Cell key={i} fill={CONGESTION_COLORS[i % 3]} />)}
+                    <Pie data={congestion} dataKey="readings" nameKey="congestion_level" innerRadius={53} outerRadius={79} paddingAngle={3}>
+                      {congestion.map((entry: any, i: number) => (
+                        <Cell key={entry.congestion_level || i} fill={entry.fill} />
+                      ))}
                     </Pie>
                     <Tooltip formatter={(v: any) => fmt(v)} />
                   </PieChart>
@@ -99,11 +117,11 @@ export function Overview({ data, openSimulation }: { data: Dict; openSimulation:
               ) : <Empty />}
             </ChartFrame>
             <div className="legend-list">
-              {data.congestion?.map((r: Dict, i: number) => (
+              {congestion.map((r: Dict) => (
                 <div key={r.congestion_level}>
-                  <i style={{ background: CONGESTION_COLORS[i % 3] }} />
+                  <i style={{ background: r.fill }} />
                   <span>{r.congestion_level}</span>
-                  <b>{pct((100 * r.readings) / Math.max(1, k.readings))}</b>
+                  <b>{pct((100 * r.readings) / Math.max(1, Number(k.readings) || 1))}</b>
                 </div>
               ))}
             </div>
